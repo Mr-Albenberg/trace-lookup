@@ -1,0 +1,581 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trace Lookup</title>
+<style>
+:root{
+  --bg:#f6f7f9; --panel:#ffffff; --panel2:#f0f2f5; --text:#16181d; --muted:#5d6472;
+  --border:#dde1e7; --accent:#2f6fec; --accent-ink:#fff; --ok:#1f8a4c; --bad:#b93a3a; --warn:#a86b00;
+  --chip:#eef3fe;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --text:#e7e9ee; --muted:#9aa1ae;
+    --border:#2a2f3a; --accent:#5b8dff; --accent-ink:#0b0d12; --ok:#4cc38a; --bad:#ff6b6b; --warn:#f0b54a;
+    --chip:#1d2840;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --text:#e7e9ee; --muted:#9aa1ae;
+  --border:#2a2f3a; --accent:#5b8dff; --accent-ink:#0b0d12; --ok:#4cc38a; --bad:#ff6b6b; --warn:#f0b54a;
+  --chip:#1d2840;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:1100px;margin:0 auto;padding:28px 16px 60px}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+header.top h1{font-size:22px;margin:0;letter-spacing:-.01em}
+header.top p{margin:2px 0 0;color:var(--muted);font-size:13px}
+.smart{display:flex;gap:8px;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:8px}
+.smart input{flex:1;min-width:0;border:0;background:transparent;color:var(--text);font-size:17px;padding:8px 10px;outline:none}
+button{font:inherit;cursor:pointer;border-radius:8px;border:1px solid var(--border);background:var(--panel2);color:var(--text);padding:8px 14px}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+button.small{padding:4px 10px;font-size:13px}
+.hint{color:var(--muted);font-size:13px;margin:8px 2px 16px}
+details.adv{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:22px}
+details.adv summary{cursor:pointer;font-weight:600}
+.fields{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}
+.fields label{display:flex;flex-direction:column;font-size:12px;color:var(--muted);gap:4px}
+.fields label.wide{grid-column:span 2}
+.fields input,.fields select{font:inherit;color:var(--text);background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;min-width:0}
+.actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;margin-bottom:18px;overflow:hidden}
+.card>header{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--panel2)}
+.card>header h2{font-size:16px;margin:0;overflow-wrap:anywhere}
+.card>header h2 small{color:var(--muted);font-weight:500;margin-left:6px}
+.card .body{padding:14px 16px}
+.facts{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;margin-bottom:14px}
+.fact{background:var(--panel2);border-radius:8px;padding:8px 10px}
+.fact b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600}
+.fact span{overflow-wrap:anywhere}
+.group-title{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:14px 0 8px;font-weight:600}
+.links{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.links a{display:flex;justify-content:space-between;align-items:center;gap:8px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text)}
+.links a:hover{border-color:var(--accent);text-decoration:none}
+.tag{font-size:11px;border-radius:999px;padding:1px 8px;background:var(--chip);color:var(--accent);white-space:nowrap}
+.tag.paid{color:var(--warn)}
+.live{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px}
+.hit{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--border);border-radius:8px;padding:8px 10px}
+.hit img{width:40px;height:40px;border-radius:6px;object-fit:cover;flex:none}
+.hit .st{font-size:12px;font-weight:600}
+.st.ok{color:var(--ok)} .st.no{color:var(--bad)} .st.wait{color:var(--muted)}
+.hit .meta{font-size:13px;color:var(--muted);overflow-wrap:anywhere}
+.pivot{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.pivot button{font-size:12px;padding:3px 9px}
+iframe.map{width:100%;height:260px;border:0;border-radius:8px;margin-bottom:12px}
+.empty{color:var(--muted);text-align:center;padding:40px 0}
+footer{color:var(--muted);font-size:12px;margin-top:30px;border-top:1px solid var(--border);padding-top:14px}
+@media (max-width:760px){
+  .fields{grid-template-columns:1fr 1fr}
+  .fields label.wide{grid-column:span 2}
+  .smart{flex-wrap:wrap}
+  .smart button{flex:1}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Trace Lookup</h1>
+      <p>Search a name, phone, email, address, username, domain or IP across public sources.</p>
+    </div>
+    <button class="small" id="themeBtn" title="Toggle theme">◐</button>
+  </header>
+
+  <form class="smart" id="smartForm">
+    <input id="smart" autocomplete="off" placeholder="Try: John Smith, Dallas TX · (214) 555-0123 · jane@gmail.com · @handle · 123 Main St, Austin, TX">
+    <button class="primary" type="submit">Search</button>
+  </form>
+  <div class="hint" id="detected">Paste anything. The type is detected automatically. Use the detailed form to combine several fields.</div>
+
+  <details class="adv" id="adv">
+    <summary>Detailed search</summary>
+    <form id="advForm">
+      <div class="fields">
+        <label>First name<input id="f_first"></label>
+        <label>Middle<input id="f_middle"></label>
+        <label>Last name<input id="f_last"></label>
+        <label>Age (optional)<input id="f_age" inputmode="numeric"></label>
+        <label class="wide">Street address<input id="f_street" placeholder="123 Main St"></label>
+        <label>City<input id="f_city"></label>
+        <label>State<select id="f_state"></select></label>
+        <label>ZIP<input id="f_zip" inputmode="numeric"></label>
+        <label>Phone<input id="f_phone" inputmode="tel"></label>
+        <label class="wide">Email<input id="f_email" type="email"></label>
+        <label>Username<input id="f_user"></label>
+        <label class="wide">Domain or IP<input id="f_domain" placeholder="example.com or 8.8.8.8"></label>
+      </div>
+      <div class="actions">
+        <button class="primary" type="submit">Search all fields</button>
+        <button type="button" id="clearBtn">Clear</button>
+      </div>
+    </form>
+  </details>
+
+  <main id="results"><div class="empty">Results will appear here.</div></main>
+
+  <footer>
+    Live checks run from your browser against free public APIs. Everything else is a link that opens the source site with your query filled in. Those sites decide what they show, and some need a paid plan or a CAPTCHA.
+    US law (FCRA) bars using people-search data for hiring, tenant screening, credit or insurance decisions. Don't use it to harass or stalk anyone.
+  </footer>
+</div>
+
+<script>
+/* ---------- reference data ---------- */
+const STATES = {AL:"Alabama",AK:"Alaska",AZ:"Arizona",AR:"Arkansas",CA:"California",CO:"Colorado",CT:"Connecticut",DE:"Delaware",DC:"District of Columbia",FL:"Florida",GA:"Georgia",HI:"Hawaii",ID:"Idaho",IL:"Illinois",IN:"Indiana",IA:"Iowa",KS:"Kansas",KY:"Kentucky",LA:"Louisiana",ME:"Maine",MD:"Maryland",MA:"Massachusetts",MI:"Michigan",MN:"Minnesota",MS:"Mississippi",MO:"Missouri",MT:"Montana",NE:"Nebraska",NV:"Nevada",NH:"New Hampshire",NJ:"New Jersey",NM:"New Mexico",NY:"New York",NC:"North Carolina",ND:"North Dakota",OH:"Ohio",OK:"Oklahoma",OR:"Oregon",PA:"Pennsylvania",RI:"Rhode Island",SC:"South Carolina",SD:"South Dakota",TN:"Tennessee",TX:"Texas",UT:"Utah",VT:"Vermont",VA:"Virginia",WA:"Washington",WV:"West Virginia",WI:"Wisconsin",WY:"Wyoming",PR:"Puerto Rico"};
+const AREA = {
+AL:"205 251 256 334 659 938",AK:"907",AZ:"480 520 602 623 928",AR:"327 479 501 870",
+CA:"209 213 279 310 323 341 350 369 408 415 424 442 510 530 559 562 619 626 628 650 657 661 669 707 714 747 760 805 818 820 831 840 858 909 916 925 949 951",
+CO:"303 719 720 970 983",CT:"203 475 860 959",DE:"302",DC:"202 771",
+FL:"239 305 321 324 352 386 407 448 561 645 656 689 727 728 754 772 786 813 850 863 904 941 954",
+GA:"229 404 470 478 678 706 762 770 912 943",HI:"808",ID:"208 986",
+IL:"217 224 309 312 331 447 464 618 630 708 730 773 779 815 847 861 872",IN:"219 260 317 463 574 765 812 930",
+IA:"319 515 563 641 712",KS:"316 620 785 913",KY:"270 364 502 606 859",LA:"225 318 337 504 985",ME:"207",
+MD:"227 240 301 410 443 667",MA:"339 351 413 508 617 774 781 857 978",MI:"231 248 269 313 517 586 616 679 734 810 906 947 989",
+MN:"218 320 507 612 651 763 952",MS:"228 601 662 769",MO:"314 417 557 573 636 660 816 975",MT:"406",NE:"308 402 531",
+NV:"702 725 775",NH:"603",NJ:"201 551 609 640 732 848 856 862 908 973",NM:"505 575",
+NY:"212 315 329 332 347 363 516 518 585 607 624 631 646 680 716 718 838 845 914 917 929 934",
+NC:"252 336 472 704 743 828 910 919 980 984",ND:"701",OH:"216 220 234 283 326 330 380 419 436 440 513 567 614 740 937",
+OK:"405 539 572 580 918",OR:"458 503 541 971",PA:"215 223 267 272 412 445 484 570 582 610 717 724 814 835 878",RI:"401",
+SC:"803 821 839 843 854 864",SD:"605",TN:"423 615 629 731 865 901 931",
+TX:"210 214 254 281 325 346 361 409 430 432 469 512 682 713 726 737 806 817 830 832 903 915 936 940 945 956 972 979",
+UT:"385 435 801",VT:"802",VA:"276 434 540 571 686 703 757 804 826 948",WA:"206 253 360 425 509 564",WV:"304 681",
+WI:"262 274 353 414 534 608 715 920",WY:"307",PR:"787 939"};
+const AC = {}; for (const [st,codes] of Object.entries(AREA)) codes.split(" ").forEach(c=>AC[c]=st);
+const TOLLFREE = ["800","833","844","855","866","877","888"];
+const FREE_MAIL = {"gmail.com":"Google","googlemail.com":"Google","yahoo.com":"Yahoo","ymail.com":"Yahoo","outlook.com":"Microsoft","hotmail.com":"Microsoft","live.com":"Microsoft","msn.com":"Microsoft","icloud.com":"Apple","me.com":"Apple","mac.com":"Apple","aol.com":"AOL","proton.me":"Proton","protonmail.com":"Proton","gmx.com":"GMX","zoho.com":"Zoho","yandex.com":"Yandex","mail.com":"Mail.com","comcast.net":"Comcast (ISP)","att.net":"AT&T (ISP)","verizon.net":"Verizon (ISP)","sbcglobal.net":"AT&T (ISP)","cox.net":"Cox (ISP)","charter.net":"Spectrum (ISP)"};
+
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const enc = encodeURIComponent;
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const slug = (s, sep="-") => String(s||"").trim().toLowerCase().replace(/[^a-z0-9]+/g, sep).replace(new RegExp(`^\\${sep}+|\\${sep}+$`,"g"),"");
+const title = s => String(s||"").trim().toLowerCase().replace(/\b[a-z]/g, c=>c.toUpperCase());
+const tcSlug = s => title(s).replace(/[^A-Za-z0-9]+/g,"-").replace(/^-|-$/g,"");
+const g = q => `https://www.google.com/search?q=${enc(q)}`;
+const ddg = q => `https://duckduckgo.com/?q=${enc(q)}`;
+const L = (name, url, tag="free") => ({name, url, tag});
+
+async function sha256(s){
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+async function getJSON(url, opts={}, ms=8000){
+  const ctl = new AbortController(); const t = setTimeout(()=>ctl.abort(), ms);
+  try { const r = await fetch(url, {...opts, signal: ctl.signal}); return {status:r.status, ok:r.ok, data: r.ok ? await r.json().catch(()=>null) : null}; }
+  catch(e){ return {status:0, ok:false, data:null, err:e}; }
+  finally { clearTimeout(t); }
+}
+
+/* ---------- parsing ---------- */
+function parsePhone(raw){
+  let d = String(raw||"").replace(/\D/g,"");
+  if (d.length === 11 && d[0] === "1") d = d.slice(1);
+  if (d.length !== 10) return null;
+  const a=d.slice(0,3), e=d.slice(3,6), l=d.slice(6);
+  return {d, a, e, l, dash:`${a}-${e}-${l}`, paren:`(${a}) ${e}-${l}`, parenTight:`(${a})${e}-${l}`, e164:`+1${d}`, dots:`${a}.${e}.${l}`};
+}
+function parseCityState(s){
+  // "Dallas, TX 75201" | "Dallas TX" | "TX"
+  s = String(s||"").trim().replace(/\s+/g," ");
+  let zip = (s.match(/\b(\d{5})(?:-\d{4})?\s*$/)||[])[1] || "";
+  if (zip) s = s.replace(/\b\d{5}(?:-\d{4})?\s*$/,"").trim();
+  const m = s.match(/^(.*?)[,\s]+([A-Za-z]{2})$/);
+  if (m && STATES[m[2].toUpperCase()]) return {city:m[1].replace(/,$/,"").trim(), state:m[2].toUpperCase(), zip};
+  if (STATES[s.toUpperCase()]) return {city:"", state:s.toUpperCase(), zip};
+  const full = Object.entries(STATES).find(([,n]) => s.toLowerCase().endsWith(n.toLowerCase()));
+  if (full) return {city:s.slice(0, s.length-full[1].length).replace(/[,\s]+$/,""), state:full[0], zip};
+  return {city:s, state:"", zip};
+}
+function detect(raw){
+  const s = raw.trim().replace(/^@(?=\w)/, m => m); // keep @ for username check
+  if (!s) return null;
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s)) return {type:"email", email:s.toLowerCase()};
+  if (/^(\d{1,3}\.){3}\d{1,3}$/.test(s) || /^[0-9a-f:]+:[0-9a-f:]+$/i.test(s)) return {type:"ip", domain:s};
+  if (/^[+\d\s().-]+$/.test(s) && parsePhone(s)) return {type:"phone", phone:s};
+  if (/^@?[A-Za-z0-9_.-]{2,40}$/.test(s) && !/^\d+$/.test(s)){
+    if (/^(https?:\/\/)?[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$/i.test(s) && !s.startsWith("@")) return {type:"domain", domain:s.replace(/^https?:\/\//,"")};
+    return {type:"username", user:s.replace(/^@/,"")};
+  }
+  if (/^https?:\/\//i.test(s)) { try { return {type:"domain", domain:new URL(s).hostname}; } catch{} }
+  if (/^\d+\s+\S+/.test(s)){
+    const parts = s.split(",").map(x=>x.trim());
+    const street = parts.shift();
+    const loc = parseCityState(parts.join(", "));
+    return {type:"address", street, ...loc};
+  }
+  // name, optionally "First Last, City ST"
+  const [namePart, ...rest] = s.split(",");
+  const words = namePart.trim().split(/\s+/);
+  let loc = rest.length ? parseCityState(rest.join(",")) : {city:"",state:"",zip:""};
+  if (!rest.length && words.length >= 3 && STATES[words[words.length-1].toUpperCase()]) {
+    loc = {city:"", state:words.pop().toUpperCase(), zip:""};
+  }
+  return {type:"name", first:words[0]||"", middle:words.length>2?words.slice(1,-1).join(" "):"", last:words.length>1?words[words.length-1]:"", ...loc};
+}
+
+/* ---------- source builders ---------- */
+function nameSources(p){
+  const full = `${p.first} ${p.last}`.trim();
+  const st = p.state, stl = st.toLowerCase(), stFull = STATES[st]||"", city = p.city;
+  const cs = [city, st].filter(Boolean).join(", ");
+  const n = slug(full);
+  const people = [
+    L("FastPeopleSearch", `https://www.fastpeoplesearch.com/name/${n}${city||st ? "_"+[slug(city),stl].filter(Boolean).join("-") : ""}`),
+    L("TruePeopleSearch", `https://www.truepeoplesearch.com/results?name=${enc(full)}${cs?`&citystatezip=${enc(cs)}`:""}`),
+    L("ThatsThem", `https://thatsthem.com/name/${tcSlug(full)}${city&&st?`/${tcSlug(city)}-${st}`:""}`),
+    L("USPhoneBook", `https://www.usphonebook.com/${n}${stFull?"/"+slug(stFull):""}${city&&stFull?"/"+slug(city):""}`),
+    L("CyberBackgroundChecks", `https://www.cyberbackgroundchecks.com/people/${n}${st?"/"+stl:""}${city&&st?"/"+slug(city):""}`),
+    L("SearchPeopleFree", `https://www.searchpeoplefree.com/find/${n}${st?"/"+stl:""}${city&&st?"/"+slug(city):""}`),
+    L("Whitepages", `https://www.whitepages.com/name/${tcSlug(full)}${city&&st?`/${tcSlug(city)}-${st}`:st?`/${st}`:""}`, "partial"),
+    L("Radaris", `https://radaris.com/p/${enc(title(p.first))}/${enc(title(p.last))}/`, "partial"),
+    L("Nuwber", `https://nuwber.com/search?name=${enc(full)}${city?`&city=${enc(city)}`:""}${st?`&state=${st}`:""}`, "partial"),
+    L("ZabaSearch", `https://www.zabasearch.com/people/${n}/${stFull?slug(stFull)+"/":""}`),
+    L("FamilyTreeNow", `https://www.familytreenow.com/search/genealogy/results?first=${enc(p.first)}&last=${enc(p.last)}${cs?`&citystatezip=${enc(cs)}`:""}`),
+    L("ClustrMaps", `https://clustrmaps.com/persons/${tcSlug(full)}`),
+    L("PeekYou", `https://www.peekyou.com/${slug(full,"_")}`),
+    L("Spokeo", `https://www.spokeo.com/${tcSlug(full)}${stFull?"/"+tcSlug(stFull):""}${city&&stFull?"/"+tcSlug(city):""}`, "paid"),
+  ];
+  const q = `"${full}"`;
+  const loc = city ? ` "${city}"` : st ? ` "${stFull}"` : "";
+  const social = [
+    L("Facebook people", `https://www.facebook.com/search/people/?q=${enc(full)}`),
+    L("LinkedIn (via Google)", g(`site:linkedin.com/in ${q}${loc}`)),
+    L("Instagram (via Google)", g(`site:instagram.com ${q}`)),
+    L("X / Twitter (via Google)", g(`site:x.com OR site:twitter.com ${q}`)),
+    L("TikTok (via Google)", g(`site:tiktok.com ${q}`)),
+    L("Google: name + location", g(`${q}${loc}`)),
+    L("DuckDuckGo", ddg(`${q}${loc}`)),
+    L("Google Images", `https://www.google.com/search?tbm=isch&q=${enc(full+(city?" "+city:""))}`),
+  ];
+  const records = [
+    L("Court records (JudyRecords)", `https://www.judyrecords.com/getSearchResults/?search=${enc(q)}`),
+    L("Obituaries (Google)", g(`${q} obituary${loc}`)),
+    L("Find a Grave", `https://www.findagrave.com/memorial/search?firstname=${enc(p.first)}&lastname=${enc(p.last)}${stFull?`&location=${enc(stFull)}`:""}`),
+    L("Voter records (Google)", g(`site:voterrecords.com ${q}`)),
+    L("Business filings (OpenCorporates)", `https://opencorporates.com/officers?q=${enc(full)}${st?`&jurisdiction_code=us_${stl}`:""}`),
+    L("Property (Google)", g(`${q}${loc} property owner parcel`)),
+    L("Sex offender registry (NSOPW)", "https://www.nsopw.gov/search-public-sex-offender-registries"),
+    L("Federal inmate locator (BOP)", "https://www.bop.gov/inmateloc/"),
+  ];
+  return [["People-search sites", people], ["Social & web", social], ["Public records", records]];
+}
+
+function phoneSources(ph){
+  const people = [
+    L("FastPeopleSearch", `https://www.fastpeoplesearch.com/${ph.dash}`),
+    L("TruePeopleSearch", `https://www.truepeoplesearch.com/resultphone?phoneno=${enc(ph.parenTight)}`),
+    L("ThatsThem", `https://thatsthem.com/phone/${ph.dash}`),
+    L("USPhoneBook", `https://www.usphonebook.com/${ph.dash}`),
+    L("CyberBackgroundChecks", `https://www.cyberbackgroundchecks.com/phone/${ph.dash}`),
+    L("SearchPeopleFree", `https://www.searchpeoplefree.com/phone-lookup/${ph.dash}`),
+    L("Whitepages", `https://www.whitepages.com/phone/1-${ph.dash}`, "partial"),
+    L("Spokeo", `https://www.spokeo.com/${ph.dash}`, "paid"),
+    L("Spy Dialer", "https://www.spydialer.com/"),
+  ];
+  const web = [
+    L("Google: all formats", g(`"${ph.dash}" OR "${ph.paren}" OR "${ph.d}" OR "${ph.dots}"`)),
+    L("DuckDuckGo", ddg(`"${ph.dash}" OR "${ph.paren}"`)),
+    L("Facebook search", `https://www.facebook.com/search/top?q=${ph.d}`),
+    L("WhatsApp (opens chat if registered)", `https://wa.me/1${ph.d}`),
+    L("Spam reports (Google)", g(`"${ph.dash}" spam OR scam OR "who called"`)),
+    L("Craigslist / ads (Google)", g(`"${ph.dash}" OR "${ph.d}" site:craigslist.org OR site:offerup.com`)),
+  ];
+  return [["Reverse phone lookup", people], ["Web & messaging", web]];
+}
+
+function emailSources(e){
+  const people = [
+    L("ThatsThem", `https://thatsthem.com/email/${enc(e)}`),
+    L("CyberBackgroundChecks", `https://www.cyberbackgroundchecks.com/email/${enc(e)}`),
+    L("Epieos (Google/accounts)", `https://epieos.com/?q=${enc(e)}&t=email`, "partial"),
+    L("Spokeo", `https://www.spokeo.com/email-search/search?e=${enc(e)}`, "paid"),
+  ];
+  const breach = [
+    L("Have I Been Pwned", `https://haveibeenpwned.com/account/${enc(e)}`),
+    L("Intelligence X", `https://intelx.io/?s=${enc(e)}`, "partial"),
+    L("DeHashed", `https://dehashed.com/search?query=${enc(e)}`, "paid"),
+    L("Hunter email verifier", `https://hunter.io/email-verifier/${enc(e)}`, "partial"),
+  ];
+  const web = [
+    L("Google exact match", g(`"${e}"`)),
+    L("DuckDuckGo", ddg(`"${e}"`)),
+    L("GitHub commits", `https://github.com/search?q=${enc(e)}&type=commits`),
+    L("PGP keyserver", `https://keys.openpgp.org/search?q=${enc(e)}`),
+    L("Pastebins (Google)", g(`"${e}" site:pastebin.com OR site:ghostbin.com OR site:justpaste.it`)),
+  ];
+  return [["People-search", people], ["Breaches & verification", breach], ["Web", web]];
+}
+
+const USER_SITES = [
+  ["GitHub","https://github.com/{u}"],["GitLab","https://gitlab.com/{u}"],["Reddit","https://www.reddit.com/user/{u}"],
+  ["X / Twitter","https://x.com/{u}"],["Instagram","https://www.instagram.com/{u}/"],["TikTok","https://www.tiktok.com/@{u}"],
+  ["YouTube","https://www.youtube.com/@{u}"],["Twitch","https://www.twitch.tv/{u}"],["Facebook","https://www.facebook.com/{u}"],
+  ["Threads","https://www.threads.net/@{u}"],["Bluesky","https://bsky.app/profile/{u}.bsky.social"],["Snapchat","https://www.snapchat.com/add/{u}"],
+  ["Pinterest","https://www.pinterest.com/{u}/"],["Tumblr","https://{u}.tumblr.com"],["Medium","https://medium.com/@{u}"],
+  ["Telegram","https://t.me/{u}"],["Steam","https://steamcommunity.com/id/{u}"],["SoundCloud","https://soundcloud.com/{u}"],
+  ["Spotify (Google)","https://www.google.com/search?q=site%3Aopen.spotify.com%2Fuser+%22{u}%22"],["Vimeo","https://vimeo.com/{u}"],["Flickr","https://www.flickr.com/people/{u}"],
+  ["DeviantArt","https://www.deviantart.com/{u}"],["Patreon","https://www.patreon.com/{u}"],["Linktree","https://linktr.ee/{u}"],
+  ["About.me","https://about.me/{u}"],["Keybase","https://keybase.io/{u}"],["Dev.to","https://dev.to/{u}"],
+  ["Hacker News","https://news.ycombinator.com/user?id={u}"],["Replit","https://replit.com/@{u}"],["Chess.com","https://www.chess.com/member/{u}"],
+  ["Lichess","https://lichess.org/@/{u}"],["Letterboxd","https://letterboxd.com/{u}/"],["Duolingo","https://www.duolingo.com/profile/{u}"],
+  ["Cash App","https://cash.app/${u}"],["Venmo","https://account.venmo.com/u/{u}"],["Roblox (search)","https://www.roblox.com/search/users?keyword={u}"],
+  ["Linkedin","https://www.linkedin.com/in/{u}"],["Mastodon (search)","https://mastodon.social/@{u}"],["Kick","https://kick.com/{u}"],
+];
+function userSources(u){
+  const profiles = USER_SITES.map(([n,t]) => L(n, t.replaceAll("{u}", enc(u))));
+  const tools = [
+    L("WhatsMyName (600+ sites)", `https://whatsmyname.app/?q=${enc(u)}`),
+    L("Namechk", `https://namechk.com/`),
+    L("Google exact match", g(`"${u}"`)),
+    L("Google: in URLs", g(`inurl:${u}`)),
+    L("Wayback Machine (Twitter)", `https://web.archive.org/web/*/twitter.com/${enc(u)}*`),
+  ];
+  return [["Profile URLs (not verified, open to check)", profiles], ["Username search tools", tools]];
+}
+
+function addressSources(a){
+  const st = a.state, city = a.city;
+  const full = [a.street, city, [st, a.zip].filter(Boolean).join(" ")].filter(Boolean).join(", ");
+  const cs = [city, st].filter(Boolean).join(", ") + (a.zip ? " " + a.zip : "");
+  const people = [
+    L("FastPeopleSearch", `https://www.fastpeoplesearch.com/address/${slug(a.street)}_${[slug(city), st.toLowerCase()].filter(Boolean).join("-")}`),
+    L("TruePeopleSearch", `https://www.truepeoplesearch.com/resultaddress?streetaddress=${enc(a.street)}&citystatezip=${enc(cs.trim())}`),
+    L("ThatsThem", `https://thatsthem.com/address/${[tcSlug(a.street), tcSlug(city), st, a.zip].filter(Boolean).join("-")}`),
+    L("Whitepages", `https://www.whitepages.com/address/${tcSlug(a.street)}/${[tcSlug(city), st].filter(Boolean).join("-")}`, "partial"),
+    L("CyberBackgroundChecks (Google)", g(`site:cyberbackgroundchecks.com "${a.street}" "${city}"`)),
+  ];
+  const prop = [
+    L("Google Maps", `https://www.google.com/maps/search/?api=1&query=${enc(full)}`),
+    L("Zillow", `https://www.zillow.com/homes/${enc(full)}_rb/`),
+    L("Redfin / Realtor (Google)", g(`"${a.street}" "${city}" site:redfin.com OR site:realtor.com`)),
+    L("County assessor (Google)", g(`${city} ${STATES[st]||st} county property appraiser parcel search`)),
+    L("Google exact match", g(`"${a.street}" "${city}"`)),
+    L("Business at address (OpenCorporates)", `https://opencorporates.com/companies?q=${enc(a.street)}`),
+  ];
+  return [["Residents", people], ["Property & map", prop]];
+}
+
+function domainSources(d, isIP){
+  if (isIP) return [["IP intelligence", [
+    L("ipinfo.io", `https://ipinfo.io/${d}`), L("Shodan", `https://www.shodan.io/host/${d}`, "partial"),
+    L("AbuseIPDB", `https://www.abuseipdb.com/check/${d}`), L("Reverse IP (ViewDNS)", `https://viewdns.info/reverseip/?host=${d}&t=1`),
+    L("GreyNoise", `https://viz.greynoise.io/ip/${d}`), L("Google", g(`"${d}"`)),
+  ]]];
+  return [["Domain intelligence", [
+    L("WHOIS (who.is)", `https://who.is/whois/${d}`), L("ICANN lookup", `https://lookup.icann.org/en/lookup?name=${d}`),
+    L("Certificates (crt.sh)", `https://crt.sh/?q=${enc(d)}`), L("SecurityTrails DNS", `https://securitytrails.com/domain/${d}/dns`, "partial"),
+    L("urlscan.io", `https://urlscan.io/search/#${enc(d)}`), L("Wayback Machine", `https://web.archive.org/web/*/${d}`),
+    L("Reverse WHOIS (ViewDNS)", `https://viewdns.info/reversewhois/?q=${d}`), L("Emails on domain (Google)", g(`"@${d}"`)),
+  ]]];
+}
+
+/* ---------- rendering ---------- */
+function renderLinks(groups){
+  return groups.map(([t, links]) => `
+    <div class="group-title">${esc(t)}</div>
+    <div class="links">${links.map(l => `<a href="${esc(l.url)}" target="_blank" rel="noopener noreferrer">${esc(l.name)}<span class="tag ${l.tag==="paid"?"paid":""}">${l.tag}</span></a>`).join("")}</div>`).join("");
+}
+function card(id, heading, sub, inner){
+  const el = document.createElement("section");
+  el.className = "card"; el.id = id;
+  el.innerHTML = `<header><h2>${esc(heading)}<small>${esc(sub)}</small></h2><button class="small" data-openall>Open all</button></header><div class="body">${inner}</div>`;
+  el.querySelector("[data-openall]").onclick = () => {
+    const links = [...el.querySelectorAll(".links a")].map(a=>a.href);
+    if (links.length > 8 && !confirm(`Open ${links.length} tabs? Your browser may ask you to allow pop-ups.`)) return;
+    links.forEach(u => window.open(u, "_blank", "noopener"));
+  };
+  $("#results").appendChild(el);
+  return el;
+}
+const fact = (k, v) => `<div class="fact"><b>${esc(k)}</b><span>${v}</span></div>`;
+function hit(name, url, status, meta="", img=""){
+  const cls = status==="Found"?"ok":status==="Not found"?"no":"wait";
+  return `<div class="hit">${img?`<img src="${esc(img)}" alt="">`:""}<div><div><a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(name)}</a> · <span class="st ${cls}">${esc(status)}</span></div>${meta?`<div class="meta">${meta}</div>`:""}</div></div>`;
+}
+function pivots(items){
+  return `<div class="pivot">${items.map(([label, q]) => `<button type="button" data-pivot="${esc(q)}">${esc(label)}</button>`).join("")}</div>`;
+}
+
+/* ---------- live checks ---------- */
+async function liveUsername(u, box){
+  const checks = [
+    ["GitHub", `https://github.com/${u}`, async () => { const r = await getJSON(`https://api.github.com/users/${enc(u)}`); if (r.status===404) return {s:"Not found"}; if (!r.ok) return null; const d=r.data; return {s:"Found", img:d.avatar_url, meta:[d.name,d.location,d.company,d.bio,d.blog,d.email,`joined ${d.created_at?.slice(0,10)}`].filter(Boolean).map(esc).join(" · ")}; }],
+    ["GitLab", `https://gitlab.com/${u}`, async () => { const r = await getJSON(`https://gitlab.com/api/v4/users?username=${enc(u)}`); if (!r.ok) return null; const d=r.data?.[0]; return d?{s:"Found", img:d.avatar_url, meta:esc(d.name||"")}:{s:"Not found"}; }],
+    ["Bluesky", `https://bsky.app/profile/${u}.bsky.social`, async () => { const r = await getJSON(`https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile?actor=${enc(u.includes(".")?u:u+".bsky.social")}`); if (r.status===400) return {s:"Not found"}; if (!r.ok) return null; const d=r.data; return {s:"Found", img:d.avatar, meta:[d.displayName, d.description, `${d.followersCount} followers`].filter(Boolean).map(esc).join(" · ")}; }],
+    ["Chess.com", `https://www.chess.com/member/${u}`, async () => { const r = await getJSON(`https://api.chess.com/pub/player/${enc(u.toLowerCase())}`); if (r.status===404) return {s:"Not found"}; if (!r.ok) return null; const d=r.data; return {s:"Found", img:d.avatar, meta:[d.name, d.location, d.country?.split("/").pop()].filter(Boolean).map(esc).join(" · ")}; }],
+    ["Lichess", `https://lichess.org/@/${u}`, async () => { const r = await getJSON(`https://lichess.org/api/user/${enc(u)}`); if (r.status===404) return {s:"Not found"}; if (!r.ok) return null; const d=r.data; return {s:"Found", meta:[d.profile?.realName, d.profile?.location, d.profile?.bio].filter(Boolean).map(esc).join(" · ")}; }],
+    ["Hacker News", `https://news.ycombinator.com/user?id=${u}`, async () => { const r = await getJSON(`https://hacker-news.firebaseio.com/v0/user/${enc(u)}.json`); if (!r.ok) return null; const d=r.data; return d?{s:"Found", meta:`karma ${d.karma}${d.about?" · "+esc(d.about.replace(/<[^>]+>/g," ").slice(0,140)):""}`}:{s:"Not found"}; }],
+    ["Keybase", `https://keybase.io/${u}`, async () => { const r = await getJSON(`https://keybase.io/_/api/1.0/user/lookup.json?usernames=${enc(u)}`); if (!r.ok) return null; const d=r.data?.them?.[0]; return d?{s:"Found", img:d.pictures?.primary?.url, meta:esc([d.profile?.full_name,d.profile?.location,d.profile?.bio].filter(Boolean).join(" · "))}:{s:"Not found"}; }],
+  ];
+  box.innerHTML = checks.map(([n,url],i) => `<div id="lc${i}">${hit(n,url,"Checking…")}</div>`).join("");
+  await Promise.all(checks.map(async ([n,url,fn],i) => {
+    let res = null; try { res = await fn(); } catch {}
+    box.querySelector("#lc"+i).innerHTML = hit(n, url, res ? res.s : "Couldn't check", res?.meta||"", res?.img||"");
+  }));
+}
+async function liveEmail(e, box){
+  const hash = await sha256(e.trim().toLowerCase()).catch(()=>null);
+  const domain = e.split("@")[1];
+  let html = "";
+  if (hash) html += `<div id="grav">${hit("Gravatar", `https://gravatar.com/${hash}`, "Checking…")}</div>`;
+  html += `<div id="mx">${hit("Mail server (MX)", `https://mxtoolbox.com/SuperTool.aspx?action=mx%3a${enc(domain)}`, "Checking…")}</div>`;
+  box.innerHTML = html;
+  if (hash){
+    const img = new Image();
+    img.onload = async () => {
+      let meta = "";
+      const r = await getJSON(`https://api.gravatar.com/v3/profiles/${hash}`);
+      if (r.ok && r.data) meta = [r.data.display_name, r.data.location, r.data.job_title, r.data.company, r.data.description].filter(Boolean).map(esc).join(" · ");
+      box.querySelector("#grav").innerHTML = hit("Gravatar", r.data?.profile_url || `https://gravatar.com/${hash}`, "Found", meta || "Has a profile photo", img.src);
+    };
+    img.onerror = () => box.querySelector("#grav").innerHTML = hit("Gravatar", `https://gravatar.com/${hash}`, "Not found", "No avatar registered to this email");
+    img.src = `https://gravatar.com/avatar/${hash}?s=80&d=404`;
+  }
+  const r = await getJSON(`https://cloudflare-dns.com/dns-query?name=${enc(domain)}&type=MX`, {headers:{accept:"application/dns-json"}});
+  const mx = (r.data?.Answer||[]).filter(a=>a.type===15).map(a=>a.data.split(" ").pop().replace(/\.$/,""));
+  let prov = "";
+  const m = mx.join(" ");
+  if (/google|googlemail/i.test(m)) prov = "Google Workspace / Gmail";
+  else if (/outlook|microsoft/i.test(m)) prov = "Microsoft 365 / Outlook";
+  else if (/protonmail/i.test(m)) prov = "Proton Mail";
+  else if (/yahoo/i.test(m)) prov = "Yahoo";
+  else if (/icloud|apple/i.test(m)) prov = "iCloud";
+  else if (/zoho/i.test(m)) prov = "Zoho";
+  box.querySelector("#mx").innerHTML = hit("Mail server (MX)", `https://mxtoolbox.com/SuperTool.aspx?action=mx%3a${enc(domain)}`,
+    !r.ok ? "Couldn't check" : mx.length ? "Found" : "Not found", mx.length ? esc((prov?prov+" · ":"") + mx.slice(0,3).join(", ")) : "Domain can't receive mail. The address may be fake.");
+}
+async function liveDomain(d, isIP, box){
+  if (isIP){
+    box.innerHTML = hit("ipinfo.io", `https://ipinfo.io/${d}`, "Checking…");
+    const r = await getJSON(`https://ipinfo.io/${enc(d)}/json`);
+    const x = r.data || {};
+    box.innerHTML = r.ok ? `<div class="facts">${["hostname","city","region","country","org","postal","timezone","loc"].filter(k=>x[k]).map(k=>fact(k, esc(x[k]))).join("")}</div>` : hit("ipinfo.io", `https://ipinfo.io/${d}`, "Couldn't check");
+    return;
+  }
+  box.innerHTML = `<div class="facts" id="dnsf">${fact("DNS","Checking…")}</div>`;
+  const types = ["A","AAAA","MX","NS","TXT"];
+  const res = await Promise.all(types.map(t => getJSON(`https://cloudflare-dns.com/dns-query?name=${enc(d)}&type=${t}`, {headers:{accept:"application/dns-json"}})));
+  const rd = await getJSON(`https://rdap.org/domain/${enc(d)}`);
+  let out = types.map((t,i) => { const a=(res[i].data?.Answer||[]).map(x=>x.data); return a.length?fact(t, esc(a.slice(0,4).join(" · ").slice(0,300))):""; }).join("");
+  if (rd.ok && rd.data){
+    const ev = Object.fromEntries((rd.data.events||[]).map(e=>[e.eventAction, e.eventDate?.slice(0,10)]));
+    const reg = (rd.data.entities||[]).find(e=>e.roles?.includes("registrar"));
+    const regName = reg?.vcardArray?.[1]?.find(v=>v[0]==="fn")?.[3];
+    if (ev.registration) out += fact("Registered", esc(ev.registration));
+    if (ev.expiration) out += fact("Expires", esc(ev.expiration));
+    if (regName) out += fact("Registrar", esc(regName));
+  }
+  box.querySelector("#dnsf").innerHTML = out || fact("DNS","No records found");
+}
+async function liveAddress(a, box){
+  const q = [a.street, a.city, a.state, a.zip].filter(Boolean).join(", ");
+  box.innerHTML = `<div class="hint">Locating…</div>`;
+  const r = await getJSON(`https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=1&countrycodes=us&q=${enc(q)}`);
+  const p = r.data?.[0];
+  if (!p){ box.innerHTML = `<div class="hint">Couldn't place this address on the map.</div>`; return; }
+  const lat=+p.lat, lon=+p.lon, dd=.004;
+  const ad = p.address||{};
+  box.innerHTML = `<iframe class="map" loading="lazy" src="https://www.openstreetmap.org/export/embed.html?bbox=${lon-dd},${lat-dd},${lon+dd},${lat+dd}&layer=mapnik&marker=${lat},${lon}"></iframe>
+    <div class="facts">${fact("Matched", esc(p.display_name))}${ad.county?fact("County", esc(ad.county)):""}${fact("Coordinates", `${lat.toFixed(5)}, ${lon.toFixed(5)}`)}${fact("Street View", `<a target="_blank" rel="noopener" href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lon}">Open</a>`)}</div>`;
+  if (ad.county){
+    const link = box.closest(".card").querySelector('.links a[href*="property%20appraiser"]');
+    if (link) link.href = g(`${ad.county} ${ad.state||""} property appraiser parcel search`);
+  }
+}
+
+/* ---------- run ---------- */
+function run(q){
+  const R = $("#results"); R.innerHTML = "";
+  let any = false;
+
+  if (q.first && q.last){
+    any = true;
+    const loc = [q.city, q.state].filter(Boolean).join(", ");
+    const c = card("c-name", `${title([q.first, q.middle, q.last].filter(Boolean).join(" "))}`, loc ? `· ${loc}` : "· name search", renderLinks(nameSources(q)));
+    if (q.age) c.querySelector(".body").insertAdjacentHTML("afterbegin", `<div class="facts">${fact("Approx. birth year", String(new Date().getFullYear()-+q.age-1)+"–"+String(new Date().getFullYear()-+q.age))}</div>`);
+  }
+  if (q.phone){
+    const ph = parsePhone(q.phone);
+    if (ph){
+      any = true;
+      const st = AC[ph.a];
+      const kind = TOLLFREE.includes(ph.a) ? "Toll-free" : ph.a==="900" ? "Premium-rate" : /^555(01\d\d)$/.test(ph.e+ph.l.slice(0,2)+"00") && ph.e==="555" ? "Fictional (555)" : "Standard";
+      const facts = `<div class="facts">${fact("Formats", `${ph.paren}<br>${ph.dash}<br>${ph.e164}`)}${fact("Area code", `${ph.a}${st?" · "+STATES[st]:""}`)}${fact("Type", kind + (ph.e==="555"?" · 555 exchange is mostly fictional/directory":""))}${fact("Note","Area code shows where the number was issued. Numbers can be ported or VoIP.")}</div>`;
+      const c = card("c-phone", ph.paren, "· reverse phone", facts + renderLinks(phoneSources(ph)));
+      if (st && !q.state) c.querySelector(".facts").insertAdjacentHTML("afterend", pivots([[`Use ${st} for name searches`, `__state:${st}`]]));
+    } else {
+      R.insertAdjacentHTML("beforeend", `<div class="card"><div class="body">"${esc(q.phone)}" isn't a 10-digit US number.</div></div>`);
+    }
+  }
+  if (q.email){
+    any = true;
+    const e = q.email.trim().toLowerCase(), [local, domain] = e.split("@");
+    const facts = `<div class="facts">${fact("Username part", esc(local))}${fact("Domain", esc(domain))}${fact("Provider", esc(FREE_MAIL[domain] || "Custom / work domain"))}</div>`;
+    const piv = pivots([[`Search username “${local.replace(/[.+].*$/,"")}”`, "@"+local.replace(/\+.*$/,"")], ...(FREE_MAIL[domain]?[]:[[`Look up domain ${domain}`, domain]])]);
+    const c = card("c-email", e, "· email", facts + piv + `<div class="group-title">Live checks</div><div class="live" id="liveEmail"></div>` + renderLinks(emailSources(e)));
+    liveEmail(e, c.querySelector("#liveEmail"));
+  }
+  if (q.user){
+    any = true;
+    const u = q.user.replace(/^@/,"").trim();
+    const c = card("c-user", "@"+u, "· username", `<div class="group-title">Live checks (public APIs)</div><div class="live" id="liveUser"></div>` + renderLinks(userSources(u)));
+    liveUsername(u, c.querySelector("#liveUser"));
+  }
+  if (q.street){
+    any = true;
+    const c = card("c-addr", title(q.street), "· " + [title(q.city), [q.state, q.zip].filter(Boolean).join(" ")].filter(Boolean).join(", "), `<div id="liveAddr"></div>` + renderLinks(addressSources(q)));
+    liveAddress(q, c.querySelector("#liveAddr"));
+  }
+  if (q.domain){
+    any = true;
+    const d = q.domain.trim().replace(/^https?:\/\//,"").replace(/\/.*$/,"").toLowerCase();
+    const isIP = /^(\d{1,3}\.){3}\d{1,3}$/.test(d) || d.includes(":");
+    const c = card("c-dom", d, isIP ? "· IP address" : "· domain", `<div id="liveDom"></div>` + renderLinks(domainSources(d, isIP)));
+    liveDomain(d, isIP, c.querySelector("#liveDom"));
+  }
+  if (!any && !R.children.length) R.innerHTML = `<div class="empty">Enter a full name (first and last), phone, email, username, address, or domain.</div>`;
+}
+
+/* ---------- form wiring ---------- */
+const F = ["first","middle","last","age","street","city","state","zip","phone","email","user","domain"];
+const stateSel = $("#f_state");
+stateSel.innerHTML = `<option value="">Any</option>` + Object.entries(STATES).map(([k,v])=>`<option value="${k}">${k} · ${v}</option>`).join("");
+function readForm(){ const o={}; F.forEach(k=>o[k]=$("#f_"+k).value.trim()); return o; }
+function fillForm(o){ F.forEach(k=>{ $("#f_"+k).value = o[k]||""; }); }
+
+$("#smartForm").onsubmit = e => {
+  e.preventDefault();
+  const d = detect($("#smart").value);
+  if (!d) return;
+  const labels = {email:"email",phone:"phone number",username:"username",name:"name",address:"address",domain:"domain",ip:"IP address"};
+  $("#detected").textContent = `Detected: ${labels[d.type]}. Wrong guess? Open Detailed search to fix it.`;
+  const o = {first:d.first,middle:d.middle,last:d.last,city:d.city,state:d.state,zip:d.zip,street:d.street,phone:d.phone,email:d.email,user:d.user,domain:d.domain};
+  if (d.type==="name" && !d.last){ o.first=""; o.user=d.first; }
+  fillForm(o);
+  run(readForm());
+};
+$("#advForm").onsubmit = e => { e.preventDefault(); run(readForm()); };
+$("#clearBtn").onclick = () => { fillForm({}); $("#smart").value=""; $("#results").innerHTML = `<div class="empty">Results will appear here.</div>`; };
+$("#results").addEventListener("click", e => {
+  const p = e.target.closest("[data-pivot]")?.dataset.pivot; if (!p) return;
+  if (p.startsWith("__state:")){ $("#f_state").value = p.slice(8); $("#adv").open = true; $("#f_first").focus(); return; }
+  $("#smart").value = p; $("#smartForm").requestSubmit(); window.scrollTo({top:0, behavior:"smooth"});
+});
+$("#themeBtn").onclick = () => {
+  const cur = document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  const next = cur === "dark" ? "light" : "dark";
+  document.documentElement.dataset.theme = next;
+  try { localStorage.setItem("theme", next); } catch {}
+};
+try { const t = localStorage.getItem("theme"); if (t) document.documentElement.dataset.theme = t; } catch {}
+const qp = new URLSearchParams(location.search).get("q");
+if (qp){ $("#smart").value = qp; $("#smartForm").requestSubmit(); }
+</script>
+</body>
+</html>
