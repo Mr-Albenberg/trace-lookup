@@ -4,97 +4,217 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Trace Lookup</title>
+<meta name="description" content="Single-page OSINT search: names, phones, emails, addresses, usernames, domains and IPs across public sources.">
 <style>
 :root{
-  --bg:#f6f7f9; --panel:#ffffff; --panel2:#f0f2f5; --text:#16181d; --muted:#5d6472;
-  --border:#dde1e7; --accent:#2f6fec; --accent-ink:#fff; --ok:#1f8a4c; --bad:#b93a3a; --warn:#a86b00;
-  --chip:#eef3fe;
+  --bg:#f4f6fa; --bg2:#e9edf4; --panel:#ffffff; --panel2:#f1f4f9; --panel3:#e7ecf4;
+  --text:#121620; --muted:#5a6376; --faint:#8b93a5;
+  --border:#dce1ea; --border2:#c9d0dc;
+  --accent:#3366ff; --accent2:#5b86ff; --accent-ink:#fff; --accent-soft:#e8eeff;
+  --ok:#17824a; --ok-soft:#e3f4ea; --bad:#c23636; --bad-soft:#fbe6e6; --warn:#9a6700; --warn-soft:#fbf0d8;
+  --crit:#b3203a; --crit-soft:#fce4e8;
+  --shadow:0 1px 2px rgba(20,30,50,.04),0 6px 20px rgba(20,30,50,.06);
+  --radius:14px;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --text:#e7e9ee; --muted:#9aa1ae;
-    --border:#2a2f3a; --accent:#5b8dff; --accent-ink:#0b0d12; --ok:#4cc38a; --bad:#ff6b6b; --warn:#f0b54a;
-    --chip:#1d2840;
+    --bg:#0b0d12; --bg2:#0f131a; --panel:#141821; --panel2:#1b212c; --panel3:#222a38;
+    --text:#e9ecf3; --muted:#9aa3b4; --faint:#6b7488;
+    --border:#262d3a; --border2:#323b4c;
+    --accent:#5b86ff; --accent2:#7ba0ff; --accent-ink:#07090e; --accent-soft:#182236;
+    --ok:#46c583; --ok-soft:#102a1e; --bad:#ff6d6d; --bad-soft:#2c1618; --warn:#f0b54a; --warn-soft:#2b2210;
+    --crit:#ff5f7a; --crit-soft:#2e1419;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 28px rgba(0,0,0,.4);
   }
 }
 :root[data-theme="dark"]{
-  --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --text:#e7e9ee; --muted:#9aa1ae;
-  --border:#2a2f3a; --accent:#5b8dff; --accent-ink:#0b0d12; --ok:#4cc38a; --bad:#ff6b6b; --warn:#f0b54a;
-  --chip:#1d2840;
+  --bg:#0b0d12; --bg2:#0f131a; --panel:#141821; --panel2:#1b212c; --panel3:#222a38;
+  --text:#e9ecf3; --muted:#9aa3b4; --faint:#6b7488;
+  --border:#262d3a; --border2:#323b4c;
+  --accent:#5b86ff; --accent2:#7ba0ff; --accent-ink:#07090e; --accent-soft:#182236;
+  --ok:#46c583; --ok-soft:#102a1e; --bad:#ff6d6d; --bad-soft:#2c1618; --warn:#f0b54a; --warn-soft:#2b2210;
+  --crit:#ff5f7a; --crit-soft:#2e1419;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 28px rgba(0,0,0,.4);
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+html{scroll-behavior:smooth}
+body{margin:0;background:
+  radial-gradient(1200px 600px at 100% -10%, var(--accent-soft), transparent 60%),
+  radial-gradient(900px 500px at -10% 0%, var(--panel3), transparent 55%),
+  var(--bg);
+  color:var(--text);font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
 a{color:var(--accent);text-decoration:none}
 a:hover{text-decoration:underline}
-.wrap{max-width:1100px;margin:0 auto;padding:28px 16px 60px}
-header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
-header.top h1{font-size:22px;margin:0;letter-spacing:-.01em}
-header.top p{margin:2px 0 0;color:var(--muted);font-size:13px}
-.smart{display:flex;gap:8px;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:8px}
-.smart input{flex:1;min-width:0;border:0;background:transparent;color:var(--text);font-size:17px;padding:8px 10px;outline:none}
-button{font:inherit;cursor:pointer;border-radius:8px;border:1px solid var(--border);background:var(--panel2);color:var(--text);padding:8px 14px}
-button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
-button.small{padding:4px 10px;font-size:13px}
-.hint{color:var(--muted);font-size:13px;margin:8px 2px 16px}
-details.adv{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:22px}
-details.adv summary{cursor:pointer;font-weight:600}
-.fields{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}
-.fields label{display:flex;flex-direction:column;font-size:12px;color:var(--muted);gap:4px}
+.wrap{max-width:1180px;margin:0 auto;padding:26px 18px 80px}
+button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--border2);background:var(--panel2);color:var(--text);padding:9px 15px;transition:.12s}
+button:hover{border-color:var(--accent);color:var(--accent)}
+button.primary{background:linear-gradient(180deg,var(--accent2),var(--accent));border:0;color:var(--accent-ink);font-weight:650;box-shadow:0 2px 10px rgba(51,102,255,.3)}
+button.primary:hover{color:var(--accent-ink);filter:brightness(1.05)}
+button.small{padding:5px 11px;font-size:13px;border-radius:8px}
+button.ghost{background:transparent;border-color:var(--border)}
+
+/* header */
+header.top{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:22px}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(145deg,var(--accent2),var(--accent));display:grid;place-items:center;box-shadow:0 4px 14px rgba(51,102,255,.35);flex:none}
+.logo svg{width:24px;height:24px;stroke:#fff;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.brand h1{font-size:21px;margin:0;letter-spacing:-.02em;font-weight:720}
+.brand p{margin:1px 0 0;color:var(--muted);font-size:12.5px}
+
+/* search hero */
+.hero{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;margin-bottom:14px}
+.smart{display:flex;gap:10px;align-items:center;background:var(--panel2);border:1.5px solid var(--border2);border-radius:12px;padding:6px 6px 6px 14px;transition:.15s}
+.smart:focus-within{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+.smart .mag{width:19px;height:19px;stroke:var(--faint);fill:none;stroke-width:2;flex:none}
+.smart input{flex:1;min-width:0;border:0;background:transparent;color:var(--text);font-size:16.5px;padding:10px 4px;outline:none}
+.smart button{flex:none}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px;align-items:center}
+.chips .lbl{font-size:12px;color:var(--faint);margin-right:2px}
+.chip-ex{font-size:12.5px;padding:4px 11px;border-radius:999px;border:1px solid var(--border);background:var(--panel2);color:var(--muted);cursor:pointer}
+.chip-ex:hover{border-color:var(--accent);color:var(--accent)}
+.detected{color:var(--muted);font-size:13px;margin-top:11px;display:flex;align-items:center;gap:7px;min-height:18px}
+.detbadge{font-size:11px;font-weight:650;letter-spacing:.03em;text-transform:uppercase;color:var(--accent);background:var(--accent-soft);padding:2px 9px;border-radius:999px}
+
+details.adv{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 18px;margin-bottom:22px}
+details.adv summary{cursor:pointer;font-weight:620;list-style:none;display:flex;align-items:center;gap:8px}
+details.adv summary::-webkit-details-marker{display:none}
+details.adv summary::before{content:"";width:7px;height:7px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(-45deg);transition:.15s;margin-right:2px}
+details.adv[open] summary::before{transform:rotate(45deg)}
+.fields{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-top:15px}
+.fields label{display:flex;flex-direction:column;font-size:11.5px;font-weight:600;color:var(--muted);gap:5px}
 .fields label.wide{grid-column:span 2}
-.fields input,.fields select{font:inherit;color:var(--text);background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;min-width:0}
-.actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
-.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;margin-bottom:18px;overflow:hidden}
-.card>header{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--panel2)}
-.card>header h2{font-size:16px;margin:0;overflow-wrap:anywhere}
-.card>header h2 small{color:var(--muted);font-weight:500;margin-left:6px}
-.card .body{padding:14px 16px}
-.facts{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;margin-bottom:14px}
-.fact{background:var(--panel2);border-radius:8px;padding:8px 10px}
-.fact b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600}
-.fact span{overflow-wrap:anywhere}
-.group-title{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:14px 0 8px;font-weight:600}
-.links{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
-.links a{display:flex;justify-content:space-between;align-items:center;gap:8px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text)}
-.links a:hover{border-color:var(--accent);text-decoration:none}
-.tag{font-size:11px;border-radius:999px;padding:1px 8px;background:var(--chip);color:var(--accent);white-space:nowrap}
-.tag.paid{color:var(--warn)}
-.live{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px}
-.hit{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--border);border-radius:8px;padding:8px 10px}
-.hit img{width:40px;height:40px;border-radius:6px;object-fit:cover;flex:none}
-.hit .st{font-size:12px;font-weight:600}
-.st.ok{color:var(--ok)} .st.no{color:var(--bad)} .st.wait{color:var(--muted)}
-.hit .meta{font-size:13px;color:var(--muted);overflow-wrap:anywhere}
-.pivot{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
-.pivot button{font-size:12px;padding:3px 9px}
-iframe.map{width:100%;height:260px;border:0;border-radius:8px;margin-bottom:12px}
-.empty{color:var(--muted);text-align:center;padding:40px 0}
-footer{color:var(--muted);font-size:12px;margin-top:30px;border-top:1px solid var(--border);padding-top:14px}
+.fields input,.fields select{font:inherit;font-weight:400;color:var(--text);background:var(--panel2);border:1px solid var(--border2);border-radius:9px;padding:9px 11px;min-width:0}
+.fields input:focus,.fields select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.actions{display:flex;gap:9px;margin-top:15px;flex-wrap:wrap}
+
+/* profile panel */
+.profile{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;margin-bottom:18px}
+.profile .ph{display:flex;gap:16px;padding:18px 20px;align-items:center;background:linear-gradient(120deg,var(--accent-soft),transparent 70%)}
+.avatar{width:72px;height:72px;border-radius:16px;object-fit:cover;background:var(--panel3);flex:none;border:2px solid var(--panel);box-shadow:0 3px 10px rgba(0,0,0,.12)}
+.avatar.ph0{display:grid;place-items:center;color:var(--faint);font-size:28px;font-weight:700}
+.pmeta{min-width:0;flex:1}
+.pmeta h2{margin:0;font-size:20px;letter-spacing:-.01em;overflow-wrap:anywhere}
+.pmeta .sub{color:var(--muted);font-size:13.5px;margin-top:3px;overflow-wrap:anywhere}
+.pcount{text-align:right;flex:none}
+.pcount b{font-size:26px;display:block;line-height:1}
+.pcount span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.pbody{padding:4px 20px 16px}
+.prow{display:flex;gap:10px;padding:9px 0;border-top:1px solid var(--border);font-size:14px}
+.prow:first-child{border-top:0}
+.prow .k{width:120px;flex:none;color:var(--muted);font-size:12.5px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;padding-top:1px}
+.prow .v{min-width:0;overflow-wrap:anywhere;display:flex;flex-wrap:wrap;gap:6px}
+.pill{background:var(--panel2);border:1px solid var(--border);border-radius:999px;padding:2px 11px;font-size:13px}
+.pill.lk{color:var(--accent)}
+
+/* result cards */
+.card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:18px;overflow:hidden}
+.card>header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border);background:var(--panel2)}
+.card>header .ht{display:flex;align-items:center;gap:11px;min-width:0}
+.card>header .ic{width:34px;height:34px;border-radius:9px;background:var(--accent-soft);display:grid;place-items:center;flex:none}
+.card>header .ic svg{width:18px;height:18px;stroke:var(--accent);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.card>header h2{font-size:16px;margin:0;overflow-wrap:anywhere;font-weight:650}
+.card>header h2 small{color:var(--muted);font-weight:500;margin-left:7px;font-size:12.5px}
+.card .body{padding:16px 18px}
+.facts{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:9px;margin-bottom:15px}
+.fact{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:9px 12px}
+.fact b{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--faint);font-weight:650;margin-bottom:2px}
+.fact span{overflow-wrap:anywhere;font-size:13.5px}
+.group-title{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);margin:16px 0 9px;font-weight:650;display:flex;align-items:center;gap:8px}
+.group-title::after{content:"";height:1px;background:var(--border);flex:1}
+.links{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
+.links a{display:flex;justify-content:space-between;align-items:center;gap:8px;border:1px solid var(--border);border-radius:10px;padding:9px 12px;color:var(--text);background:var(--panel2);transition:.12s}
+.links a:hover{border-color:var(--accent);text-decoration:none;transform:translateY(-1px)}
+.tag{font-size:10px;font-weight:650;border-radius:999px;padding:2px 8px;background:var(--accent-soft);color:var(--accent);white-space:nowrap;text-transform:uppercase;letter-spacing:.03em}
+.tag.paid{color:var(--warn);background:var(--warn-soft)}
+.tag.partial{color:var(--muted);background:var(--panel3)}
+
+/* live hits */
+.live{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:9px}
+.hit{display:flex;gap:11px;align-items:flex-start;border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:var(--panel2)}
+.hit img{width:42px;height:42px;border-radius:9px;object-fit:cover;flex:none;background:var(--panel3)}
+.hit .nm{font-weight:600;font-size:13.5px}
+.hit .meta{font-size:12.5px;color:var(--muted);overflow-wrap:anywhere;margin-top:2px}
+.st{font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;white-space:nowrap}
+.st.ok{color:var(--ok);background:var(--ok-soft)} .st.no{color:var(--faint);background:var(--panel3)} .st.wait{color:var(--muted);background:var(--panel3)}
+.spin{display:inline-block;width:11px;height:11px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-1px}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* breach */
+.breach-head{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.risk{display:flex;flex-direction:column;align-items:center;justify-content:center;width:96px;height:96px;border-radius:16px;flex:none;border:2px solid}
+.risk b{font-size:26px;line-height:1}
+.risk span{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;margin-top:3px;font-weight:700}
+.risk.critical,.risk.high{color:var(--crit);background:var(--crit-soft);border-color:var(--crit)}
+.risk.medium{color:var(--warn);background:var(--warn-soft);border-color:var(--warn)}
+.risk.low{color:var(--ok);background:var(--ok-soft);border-color:var(--ok)}
+.risk.none{color:var(--ok);background:var(--ok-soft);border-color:var(--ok)}
+.bsum{flex:1;min-width:200px}
+.bsum .big{font-size:22px;font-weight:700}
+.bsum .lede{color:var(--muted);font-size:13.5px;margin-top:3px}
+.secnote{display:flex;gap:9px;align-items:flex-start;background:var(--warn-soft);border:1px solid color-mix(in srgb,var(--warn) 35%,transparent);border-radius:10px;padding:10px 13px;font-size:13px;margin-bottom:14px}
+.secnote svg{width:17px;height:17px;stroke:var(--warn);fill:none;stroke-width:2;flex:none;margin-top:1px}
+.exposed{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:6px}
+.exp{font-size:12.5px;padding:4px 11px;border-radius:999px;background:var(--panel2);border:1px solid var(--border)}
+.exp.sev{color:var(--crit);background:var(--crit-soft);border-color:color-mix(in srgb,var(--crit) 30%,transparent);font-weight:600}
+.exp b{font-weight:700;margin-left:4px;opacity:.7}
+.blist{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:9px;margin-top:4px}
+.bitem{display:flex;gap:11px;border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:var(--panel2)}
+.bitem img{width:34px;height:34px;border-radius:7px;object-fit:contain;background:#fff;flex:none;padding:2px}
+.bitem .bn{font-weight:650;font-size:13.5px}
+.bitem .bd{font-size:12px;color:var(--muted);margin-top:2px;overflow-wrap:anywhere}
+.bitem .bx{font-size:11.5px;color:var(--faint);margin-top:4px}
+.morebtn{margin-top:12px}
+
+iframe.map{width:100%;height:280px;border:0;border-radius:11px;margin-bottom:13px;background:var(--panel2)}
+.pivot{display:flex;flex-wrap:wrap;gap:7px;margin:4px 0 12px}
+.pivot button{font-size:12.5px;padding:5px 12px;border-radius:999px}
+.empty{color:var(--muted);text-align:center;padding:60px 20px}
+.empty svg{width:46px;height:46px;stroke:var(--border2);fill:none;stroke-width:1.5;margin-bottom:12px}
+.empty p{margin:0;font-size:15px}
+.empty .s{font-size:13px;color:var(--faint);margin-top:6px}
+footer{color:var(--muted);font-size:12.5px;margin-top:34px;border-top:1px solid var(--border);padding-top:16px;line-height:1.6}
+footer b{color:var(--text)}
 @media (max-width:760px){
   .fields{grid-template-columns:1fr 1fr}
-  .fields label.wide{grid-column:span 2}
-  .smart{flex-wrap:wrap}
-  .smart button{flex:1}
+  .smart{flex-wrap:wrap;padding:10px}
+  .smart input{width:100%;order:2}.smart .mag{order:1}.smart button{order:3;width:100%}
+  .pcount{display:none}
+  .prow{flex-direction:column;gap:3px}.prow .k{width:auto}
 }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header class="top">
-    <div>
-      <h1>Trace Lookup</h1>
-      <p>Search a name, phone, email, address, username, domain or IP across public sources.</p>
+    <div class="brand">
+      <div class="logo"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div>
+      <div>
+        <h1>Trace Lookup</h1>
+        <p>Search names, phones, emails, addresses, usernames, domains &amp; IPs across public sources.</p>
+      </div>
     </div>
-    <button class="small" id="themeBtn" title="Toggle theme">◐</button>
+    <button class="small ghost" id="themeBtn" title="Toggle light / dark">◐ Theme</button>
   </header>
 
-  <form class="smart" id="smartForm">
-    <input id="smart" autocomplete="off" placeholder="Try: John Smith, Dallas TX · (214) 555-0123 · jane@gmail.com · @handle · 123 Main St, Austin, TX">
-    <button class="primary" type="submit">Search</button>
-  </form>
-  <div class="hint" id="detected">Paste anything. The type is detected automatically. Use the detailed form to combine several fields.</div>
+  <div class="hero">
+    <form class="smart" id="smartForm">
+      <svg class="mag" viewBox="0 0 24 24" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="smart" autocomplete="off" spellcheck="false" placeholder="Name, phone, email, @username, address, domain or IP…">
+      <button class="primary" type="submit">Search</button>
+    </form>
+    <div class="chips">
+      <span class="lbl">Try:</span>
+      <span class="chip-ex">Linus Torvalds, Portland OR</span>
+      <span class="chip-ex">(214) 555-0123</span>
+      <span class="chip-ex">someone@gmail.com</span>
+      <span class="chip-ex">@torvalds</span>
+      <span class="chip-ex">github.com</span>
+    </div>
+    <div class="detected" id="detected"></div>
+  </div>
 
   <details class="adv" id="adv">
-    <summary>Detailed search</summary>
+    <summary>Detailed search — combine several fields</summary>
     <form id="advForm">
       <div class="fields">
         <label>First name<input id="f_first"></label>
@@ -112,470 +232,325 @@ footer{color:var(--muted);font-size:12px;margin-top:30px;border-top:1px solid va
       </div>
       <div class="actions">
         <button class="primary" type="submit">Search all fields</button>
-        <button type="button" id="clearBtn">Clear</button>
+        <button type="button" class="ghost" id="clearBtn">Clear</button>
       </div>
     </form>
   </details>
 
-  <main id="results"><div class="empty">Results will appear here.</div></main>
+  <main id="results">
+    <div class="empty">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <p>Enter anything above to begin.</p>
+      <div class="s">Live checks run instantly. Everything else opens the source site with your query filled in.</div>
+    </div>
+  </main>
 
   <footer>
-    Live checks run from your browser against free public APIs. Everything else is a link that opens the source site with your query filled in. Those sites decide what they show, and some need a paid plan or a CAPTCHA.
-    US law (FCRA) bars using people-search data for hiring, tenant screening, credit or insurance decisions. Don't use it to harass or stalk anyone.
+    <b>How this works.</b> Live checks query free public APIs straight from your browser and show what's publicly visible (profile name, photo, location, bio; breach exposure; DNS). Everything else is a link that opens a public source with your query pre-filled — those sites decide what they show, and some need a paid plan or a CAPTCHA.<br>
+    <b>Breach data</b> shows <i>which</i> breaches an email appears in and <i>what kinds</i> of data leaked. It never retrieves or displays leaked passwords. If an email shows up in breaches, change those passwords and turn on 2FA.<br>
+    <b>Use it responsibly.</b> US law (FCRA) bars using people-search data for hiring, tenant screening, credit or insurance decisions. Don't use this to harass, stalk or endanger anyone. Public data on yourself: fair game. Someone else: think first.
   </footer>
 </div>
 
 <script>
-/* ---------- reference data ---------- */
-const STATES = {AL:"Alabama",AK:"Alaska",AZ:"Arizona",AR:"Arkansas",CA:"California",CO:"Colorado",CT:"Connecticut",DE:"Delaware",DC:"District of Columbia",FL:"Florida",GA:"Georgia",HI:"Hawaii",ID:"Idaho",IL:"Illinois",IN:"Indiana",IA:"Iowa",KS:"Kansas",KY:"Kentucky",LA:"Louisiana",ME:"Maine",MD:"Maryland",MA:"Massachusetts",MI:"Michigan",MN:"Minnesota",MS:"Mississippi",MO:"Missouri",MT:"Montana",NE:"Nebraska",NV:"Nevada",NH:"New Hampshire",NJ:"New Jersey",NM:"New Mexico",NY:"New York",NC:"North Carolina",ND:"North Dakota",OH:"Ohio",OK:"Oklahoma",OR:"Oregon",PA:"Pennsylvania",RI:"Rhode Island",SC:"South Carolina",SD:"South Dakota",TN:"Tennessee",TX:"Texas",UT:"Utah",VT:"Vermont",VA:"Virginia",WA:"Washington",WV:"West Virginia",WI:"Wisconsin",WY:"Wyoming",PR:"Puerto Rico"};
-const AREA = {
-AL:"205 251 256 334 659 938",AK:"907",AZ:"480 520 602 623 928",AR:"327 479 501 870",
-CA:"209 213 279 310 323 341 350 369 408 415 424 442 510 530 559 562 619 626 628 650 657 661 669 707 714 747 760 805 818 820 831 840 858 909 916 925 949 951",
-CO:"303 719 720 970 983",CT:"203 475 860 959",DE:"302",DC:"202 771",
-FL:"239 305 321 324 352 386 407 448 561 645 656 689 727 728 754 772 786 813 850 863 904 941 954",
-GA:"229 404 470 478 678 706 762 770 912 943",HI:"808",ID:"208 986",
-IL:"217 224 309 312 331 447 464 618 630 708 730 773 779 815 847 861 872",IN:"219 260 317 463 574 765 812 930",
-IA:"319 515 563 641 712",KS:"316 620 785 913",KY:"270 364 502 606 859",LA:"225 318 337 504 985",ME:"207",
-MD:"227 240 301 410 443 667",MA:"339 351 413 508 617 774 781 857 978",MI:"231 248 269 313 517 586 616 679 734 810 906 947 989",
-MN:"218 320 507 612 651 763 952",MS:"228 601 662 769",MO:"314 417 557 573 636 660 816 975",MT:"406",NE:"308 402 531",
-NV:"702 725 775",NH:"603",NJ:"201 551 609 640 732 848 856 862 908 973",NM:"505 575",
-NY:"212 315 329 332 347 363 516 518 585 607 624 631 646 680 716 718 838 845 914 917 929 934",
-NC:"252 336 472 704 743 828 910 919 980 984",ND:"701",OH:"216 220 234 283 326 330 380 419 436 440 513 567 614 740 937",
-OK:"405 539 572 580 918",OR:"458 503 541 971",PA:"215 223 267 272 412 445 484 570 582 610 717 724 814 835 878",RI:"401",
-SC:"803 821 839 843 854 864",SD:"605",TN:"423 615 629 731 865 901 931",
-TX:"210 214 254 281 325 346 361 409 430 432 469 512 682 713 726 737 806 817 830 832 903 915 936 940 945 956 972 979",
-UT:"385 435 801",VT:"802",VA:"276 434 540 571 686 703 757 804 826 948",WA:"206 253 360 425 509 564",WV:"304 681",
-WI:"262 274 353 414 534 608 715 920",WY:"307",PR:"787 939"};
-const AC = {}; for (const [st,codes] of Object.entries(AREA)) codes.split(" ").forEach(c=>AC[c]=st);
-const TOLLFREE = ["800","833","844","855","866","877","888"];
-const FREE_MAIL = {"gmail.com":"Google","googlemail.com":"Google","yahoo.com":"Yahoo","ymail.com":"Yahoo","outlook.com":"Microsoft","hotmail.com":"Microsoft","live.com":"Microsoft","msn.com":"Microsoft","icloud.com":"Apple","me.com":"Apple","mac.com":"Apple","aol.com":"AOL","proton.me":"Proton","protonmail.com":"Proton","gmx.com":"GMX","zoho.com":"Zoho","yandex.com":"Yandex","mail.com":"Mail.com","comcast.net":"Comcast (ISP)","att.net":"AT&T (ISP)","verizon.net":"Verizon (ISP)","sbcglobal.net":"AT&T (ISP)","cox.net":"Cox (ISP)","charter.net":"Spectrum (ISP)"};
+/* ============ reference data ============ */
+const STATES={AL:"Alabama",AK:"Alaska",AZ:"Arizona",AR:"Arkansas",CA:"California",CO:"Colorado",CT:"Connecticut",DE:"Delaware",DC:"District of Columbia",FL:"Florida",GA:"Georgia",HI:"Hawaii",ID:"Idaho",IL:"Illinois",IN:"Indiana",IA:"Iowa",KS:"Kansas",KY:"Kentucky",LA:"Louisiana",ME:"Maine",MD:"Maryland",MA:"Massachusetts",MI:"Michigan",MN:"Minnesota",MS:"Mississippi",MO:"Missouri",MT:"Montana",NE:"Nebraska",NV:"Nevada",NH:"New Hampshire",NJ:"New Jersey",NM:"New Mexico",NY:"New York",NC:"North Carolina",ND:"North Dakota",OH:"Ohio",OK:"Oklahoma",OR:"Oregon",PA:"Pennsylvania",RI:"Rhode Island",SC:"South Carolina",SD:"South Dakota",TN:"Tennessee",TX:"Texas",UT:"Utah",VT:"Vermont",VA:"Virginia",WA:"Washington",WV:"West Virginia",WI:"Wisconsin",WY:"Wyoming",PR:"Puerto Rico"};
+const AREA={AL:"205 251 256 334 659 938",AK:"907",AZ:"480 520 602 623 928",AR:"327 479 501 870",CA:"209 213 279 310 323 341 350 369 408 415 424 442 510 530 559 562 619 626 628 650 657 661 669 707 714 747 760 805 818 820 831 840 858 909 916 925 949 951",CO:"303 719 720 970 983",CT:"203 475 860 959",DE:"302",DC:"202 771",FL:"239 305 321 324 352 386 407 448 561 645 656 689 727 728 754 772 786 813 850 863 904 941 954",GA:"229 404 470 478 678 706 762 770 912 943",HI:"808",ID:"208 986",IL:"217 224 309 312 331 447 464 618 630 708 730 773 779 815 847 861 872",IN:"219 260 317 463 574 765 812 930",IA:"319 515 563 641 712",KS:"316 620 785 913",KY:"270 364 502 606 859",LA:"225 318 337 504 985",ME:"207",MD:"227 240 301 410 443 667",MA:"339 351 413 508 617 774 781 857 978",MI:"231 248 269 313 517 586 616 679 734 810 906 947 989",MN:"218 320 507 612 651 763 952",MS:"228 601 662 769",MO:"314 417 557 573 636 660 816 975",MT:"406",NE:"308 402 531",NV:"702 725 775",NH:"603",NJ:"201 551 609 640 732 848 856 862 908 973",NM:"505 575",NY:"212 315 329 332 347 363 516 518 585 607 624 631 646 680 716 718 838 845 914 917 929 934",NC:"252 336 472 704 743 828 910 919 980 984",ND:"701",OH:"216 220 234 283 326 330 380 419 436 440 513 567 614 740 937",OK:"405 539 572 580 918",OR:"458 503 541 971",PA:"215 223 267 272 412 445 484 570 582 610 717 724 814 835 878",RI:"401",SC:"803 821 839 843 854 864",SD:"605",TN:"423 615 629 731 865 901 931",TX:"210 214 254 281 325 346 361 409 430 432 469 512 682 713 726 737 806 817 830 832 903 915 936 940 945 956 972 979",UT:"385 435 801",VT:"802",VA:"276 434 540 571 686 703 757 804 826 948",WA:"206 253 360 425 509 564",WV:"304 681",WI:"262 274 353 414 534 608 715 920",WY:"307",PR:"787 939"};
+const AC={};for(const[st,c]of Object.entries(AREA))c.split(" ").forEach(x=>AC[x]=st);
+const TOLLFREE=["800","833","844","855","866","877","888"];
+const FREE_MAIL={"gmail.com":"Google","googlemail.com":"Google","yahoo.com":"Yahoo","ymail.com":"Yahoo","outlook.com":"Microsoft","hotmail.com":"Microsoft","live.com":"Microsoft","msn.com":"Microsoft","icloud.com":"Apple","me.com":"Apple","mac.com":"Apple","aol.com":"AOL","proton.me":"Proton","protonmail.com":"Proton","gmx.com":"GMX","zoho.com":"Zoho","yandex.com":"Yandex","mail.com":"Mail.com","comcast.net":"Comcast (ISP)","att.net":"AT&T (ISP)","verizon.net":"Verizon (ISP)","sbcglobal.net":"AT&T (ISP)","cox.net":"Cox (ISP)","charter.net":"Spectrum (ISP)"};
 
-/* ---------- helpers ---------- */
-const $ = s => document.querySelector(s);
-const enc = encodeURIComponent;
-const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const slug = (s, sep="-") => String(s||"").trim().toLowerCase().replace(/[^a-z0-9]+/g, sep).replace(new RegExp(`^\\${sep}+|\\${sep}+$`,"g"),"");
-const title = s => String(s||"").trim().toLowerCase().replace(/\b[a-z]/g, c=>c.toUpperCase());
-const tcSlug = s => title(s).replace(/[^A-Za-z0-9]+/g,"-").replace(/^-|-$/g,"");
-const g = q => `https://www.google.com/search?q=${enc(q)}`;
-const ddg = q => `https://duckduckgo.com/?q=${enc(q)}`;
-const L = (name, url, tag="free") => ({name, url, tag});
+/* ============ helpers ============ */
+const $=s=>document.querySelector(s);
+const enc=encodeURIComponent;
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const slug=(s,sep="-")=>String(s||"").trim().toLowerCase().replace(/[^a-z0-9]+/g,sep).replace(new RegExp(`^\\${sep}+|\\${sep}+$`,"g"),"");
+const title=s=>String(s||"").trim().toLowerCase().replace(/\b[a-z]/g,c=>c.toUpperCase());
+const tcSlug=s=>title(s).replace(/[^A-Za-z0-9]+/g,"-").replace(/^-|-$/g,"");
+const g=q=>`https://www.google.com/search?q=${enc(q)}`;
+const ddg=q=>`https://duckduckgo.com/?q=${enc(q)}`;
+const L=(name,url,tag="free")=>({name,url,tag});
+async function sha256(s){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("");}
+async function getJSON(url,opts={},ms=9000){const c=new AbortController(),t=setTimeout(()=>c.abort(),ms);try{const r=await fetch(url,{...opts,signal:c.signal});return{status:r.status,ok:r.ok,data:r.ok?await r.json().catch(()=>null):null};}catch(e){return{status:0,ok:false,data:null,err:e};}finally{clearTimeout(t);}}
 
-async function sha256(s){
-  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
-  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
-}
-async function getJSON(url, opts={}, ms=8000){
-  const ctl = new AbortController(); const t = setTimeout(()=>ctl.abort(), ms);
-  try { const r = await fetch(url, {...opts, signal: ctl.signal}); return {status:r.status, ok:r.ok, data: r.ok ? await r.json().catch(()=>null) : null}; }
-  catch(e){ return {status:0, ok:false, data:null, err:e}; }
-  finally { clearTimeout(t); }
-}
+/* ============ parsing ============ */
+function parsePhone(raw){let d=String(raw||"").replace(/\D/g,"");if(d.length===11&&d[0]==="1")d=d.slice(1);if(d.length!==10)return null;const a=d.slice(0,3),e=d.slice(3,6),l=d.slice(6);return{d,a,e,l,dash:`${a}-${e}-${l}`,paren:`(${a}) ${e}-${l}`,parenTight:`(${a})${e}-${l}`,e164:`+1${d}`,dots:`${a}.${e}.${l}`};}
+function parseCityState(s){s=String(s||"").trim().replace(/\s+/g," ");let zip=(s.match(/\b(\d{5})(?:-\d{4})?\s*$/)||[])[1]||"";if(zip)s=s.replace(/\b\d{5}(?:-\d{4})?\s*$/,"").trim();const m=s.match(/^(.*?)[,\s]+([A-Za-z]{2})$/);if(m&&STATES[m[2].toUpperCase()])return{city:m[1].replace(/,$/,"").trim(),state:m[2].toUpperCase(),zip};if(STATES[s.toUpperCase()])return{city:"",state:s.toUpperCase(),zip};const full=Object.entries(STATES).find(([,n])=>s.toLowerCase().endsWith(n.toLowerCase()));if(full)return{city:s.slice(0,s.length-full[1].length).replace(/[,\s]+$/,""),state:full[0],zip};return{city:s,state:"",zip};}
+function detect(raw){const s=raw.trim();if(!s)return null;
+  if(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s))return{type:"email",email:s.toLowerCase()};
+  if(/^(\d{1,3}\.){3}\d{1,3}$/.test(s)||/^[0-9a-f:]+:[0-9a-f:]+$/i.test(s))return{type:"ip",domain:s};
+  if(/^[+\d\s().-]+$/.test(s)&&parsePhone(s))return{type:"phone",phone:s};
+  if(/^@[A-Za-z0-9_.-]{2,40}$/.test(s))return{type:"username",user:s.replace(/^@/,"")};
+  if(/^https?:\/\//i.test(s)){try{return{type:"domain",domain:new URL(s).hostname};}catch{}}
+  if(/^[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$/i.test(s)&&!s.includes(" "))return{type:"domain",domain:s};
+  if(/^[A-Za-z0-9_.-]{2,40}$/.test(s)&&!/^\d+$/.test(s)&&!s.includes(" "))return{type:"username",user:s};
+  if(/^\d+\s+\S+/.test(s)){const p=s.split(",").map(x=>x.trim());const street=p.shift();return{type:"address",street,...parseCityState(p.join(", "))};}
+  const[namePart,...rest]=s.split(",");const words=namePart.trim().split(/\s+/);let loc=rest.length?parseCityState(rest.join(",")):{city:"",state:"",zip:""};
+  if(!rest.length&&words.length>=3&&STATES[words[words.length-1].toUpperCase()])loc={city:"",state:words.pop().toUpperCase(),zip:""};
+  return{type:"name",first:words[0]||"",middle:words.length>2?words.slice(1,-1).join(" "):"",last:words.length>1?words[words.length-1]:"",...loc};}
 
-/* ---------- parsing ---------- */
-function parsePhone(raw){
-  let d = String(raw||"").replace(/\D/g,"");
-  if (d.length === 11 && d[0] === "1") d = d.slice(1);
-  if (d.length !== 10) return null;
-  const a=d.slice(0,3), e=d.slice(3,6), l=d.slice(6);
-  return {d, a, e, l, dash:`${a}-${e}-${l}`, paren:`(${a}) ${e}-${l}`, parenTight:`(${a})${e}-${l}`, e164:`+1${d}`, dots:`${a}.${e}.${l}`};
-}
-function parseCityState(s){
-  // "Dallas, TX 75201" | "Dallas TX" | "TX"
-  s = String(s||"").trim().replace(/\s+/g," ");
-  let zip = (s.match(/\b(\d{5})(?:-\d{4})?\s*$/)||[])[1] || "";
-  if (zip) s = s.replace(/\b\d{5}(?:-\d{4})?\s*$/,"").trim();
-  const m = s.match(/^(.*?)[,\s]+([A-Za-z]{2})$/);
-  if (m && STATES[m[2].toUpperCase()]) return {city:m[1].replace(/,$/,"").trim(), state:m[2].toUpperCase(), zip};
-  if (STATES[s.toUpperCase()]) return {city:"", state:s.toUpperCase(), zip};
-  const full = Object.entries(STATES).find(([,n]) => s.toLowerCase().endsWith(n.toLowerCase()));
-  if (full) return {city:s.slice(0, s.length-full[1].length).replace(/[,\s]+$/,""), state:full[0], zip};
-  return {city:s, state:"", zip};
-}
-function detect(raw){
-  const s = raw.trim().replace(/^@(?=\w)/, m => m); // keep @ for username check
-  if (!s) return null;
-  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s)) return {type:"email", email:s.toLowerCase()};
-  if (/^(\d{1,3}\.){3}\d{1,3}$/.test(s) || /^[0-9a-f:]+:[0-9a-f:]+$/i.test(s)) return {type:"ip", domain:s};
-  if (/^[+\d\s().-]+$/.test(s) && parsePhone(s)) return {type:"phone", phone:s};
-  if (/^@?[A-Za-z0-9_.-]{2,40}$/.test(s) && !/^\d+$/.test(s)){
-    if (/^(https?:\/\/)?[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$/i.test(s) && !s.startsWith("@")) return {type:"domain", domain:s.replace(/^https?:\/\//,"")};
-    return {type:"username", user:s.replace(/^@/,"")};
-  }
-  if (/^https?:\/\//i.test(s)) { try { return {type:"domain", domain:new URL(s).hostname}; } catch{} }
-  if (/^\d+\s+\S+/.test(s)){
-    const parts = s.split(",").map(x=>x.trim());
-    const street = parts.shift();
-    const loc = parseCityState(parts.join(", "));
-    return {type:"address", street, ...loc};
-  }
-  // name, optionally "First Last, City ST"
-  const [namePart, ...rest] = s.split(",");
-  const words = namePart.trim().split(/\s+/);
-  let loc = rest.length ? parseCityState(rest.join(",")) : {city:"",state:"",zip:""};
-  if (!rest.length && words.length >= 3 && STATES[words[words.length-1].toUpperCase()]) {
-    loc = {city:"", state:words.pop().toUpperCase(), zip:""};
-  }
-  return {type:"name", first:words[0]||"", middle:words.length>2?words.slice(1,-1).join(" "):"", last:words.length>1?words[words.length-1]:"", ...loc};
-}
-
-/* ---------- source builders ---------- */
+/* ============ source builders ============ */
 function nameSources(p){
-  const full = `${p.first} ${p.last}`.trim();
-  const st = p.state, stl = st.toLowerCase(), stFull = STATES[st]||"", city = p.city;
-  const cs = [city, st].filter(Boolean).join(", ");
-  const n = slug(full);
-  const people = [
-    L("FastPeopleSearch", `https://www.fastpeoplesearch.com/name/${n}${city||st ? "_"+[slug(city),stl].filter(Boolean).join("-") : ""}`),
-    L("TruePeopleSearch", `https://www.truepeoplesearch.com/results?name=${enc(full)}${cs?`&citystatezip=${enc(cs)}`:""}`),
-    L("ThatsThem", `https://thatsthem.com/name/${tcSlug(full)}${city&&st?`/${tcSlug(city)}-${st}`:""}`),
-    L("USPhoneBook", `https://www.usphonebook.com/${n}${stFull?"/"+slug(stFull):""}${city&&stFull?"/"+slug(city):""}`),
-    L("CyberBackgroundChecks", `https://www.cyberbackgroundchecks.com/people/${n}${st?"/"+stl:""}${city&&st?"/"+slug(city):""}`),
-    L("SearchPeopleFree", `https://www.searchpeoplefree.com/find/${n}${st?"/"+stl:""}${city&&st?"/"+slug(city):""}`),
-    L("Whitepages", `https://www.whitepages.com/name/${tcSlug(full)}${city&&st?`/${tcSlug(city)}-${st}`:st?`/${st}`:""}`, "partial"),
-    L("Radaris", `https://radaris.com/p/${enc(title(p.first))}/${enc(title(p.last))}/`, "partial"),
-    L("Nuwber", `https://nuwber.com/search?name=${enc(full)}${city?`&city=${enc(city)}`:""}${st?`&state=${st}`:""}`, "partial"),
-    L("ZabaSearch", `https://www.zabasearch.com/people/${n}/${stFull?slug(stFull)+"/":""}`),
-    L("FamilyTreeNow", `https://www.familytreenow.com/search/genealogy/results?first=${enc(p.first)}&last=${enc(p.last)}${cs?`&citystatezip=${enc(cs)}`:""}`),
-    L("ClustrMaps", `https://clustrmaps.com/persons/${tcSlug(full)}`),
-    L("PeekYou", `https://www.peekyou.com/${slug(full,"_")}`),
-    L("Spokeo", `https://www.spokeo.com/${tcSlug(full)}${stFull?"/"+tcSlug(stFull):""}${city&&stFull?"/"+tcSlug(city):""}`, "paid"),
+  const full=`${p.first} ${p.last}`.trim(),st=p.state,stl=st.toLowerCase(),stFull=STATES[st]||"",city=p.city,cs=[city,st].filter(Boolean).join(", "),n=slug(full);
+  const people=[
+    L("FastPeopleSearch",`https://www.fastpeoplesearch.com/name/${n}${city||st?"_"+[slug(city),stl].filter(Boolean).join("-"):""}`),
+    L("TruePeopleSearch",`https://www.truepeoplesearch.com/results?name=${enc(full)}${cs?`&citystatezip=${enc(cs)}`:""}`),
+    L("ThatsThem",`https://thatsthem.com/name/${tcSlug(full)}${city&&st?`/${tcSlug(city)}-${st}`:""}`),
+    L("USPhoneBook",`https://www.usphonebook.com/${n}${stFull?"/"+slug(stFull):""}${city&&stFull?"/"+slug(city):""}`),
+    L("CyberBackgroundChecks",`https://www.cyberbackgroundchecks.com/people/${n}${st?"/"+stl:""}${city&&st?"/"+slug(city):""}`),
+    L("SearchPeopleFree",`https://www.searchpeoplefree.com/find/${n}${st?"/"+stl:""}${city&&st?"/"+slug(city):""}`),
+    L("Whitepages",`https://www.whitepages.com/name/${tcSlug(full)}${city&&st?`/${tcSlug(city)}-${st}`:st?`/${st}`:""}`,"partial"),
+    L("Radaris",`https://radaris.com/p/${enc(title(p.first))}/${enc(title(p.last))}/`,"partial"),
+    L("Nuwber",`https://nuwber.com/search?name=${enc(full)}${city?`&city=${enc(city)}`:""}${st?`&state=${st}`:""}`,"partial"),
+    L("ZabaSearch",`https://www.zabasearch.com/people/${n}/${stFull?slug(stFull)+"/":""}`),
+    L("FamilyTreeNow",`https://www.familytreenow.com/search/genealogy/results?first=${enc(p.first)}&last=${enc(p.last)}${cs?`&citystatezip=${enc(cs)}`:""}`),
+    L("ClustrMaps",`https://clustrmaps.com/persons/${tcSlug(full)}`),
+    L("PeekYou",`https://www.peekyou.com/${slug(full,"_")}`),
+    L("Spokeo",`https://www.spokeo.com/${tcSlug(full)}${stFull?"/"+tcSlug(stFull):""}${city&&stFull?"/"+tcSlug(city):""}`,"paid"),
+    L("BeenVerified",`https://www.beenverified.com/people/${slug(p.first)}-${slug(p.last)}/`,"paid"),
+    L("Intelius",`https://www.intelius.com/people-search/${slug(p.first)}-${slug(p.last)}/`,"paid"),
   ];
-  const q = `"${full}"`;
-  const loc = city ? ` "${city}"` : st ? ` "${stFull}"` : "";
-  const social = [
-    L("Facebook people", `https://www.facebook.com/search/people/?q=${enc(full)}`),
-    L("LinkedIn (via Google)", g(`site:linkedin.com/in ${q}${loc}`)),
-    L("Instagram (via Google)", g(`site:instagram.com ${q}`)),
-    L("X / Twitter (via Google)", g(`site:x.com OR site:twitter.com ${q}`)),
-    L("TikTok (via Google)", g(`site:tiktok.com ${q}`)),
-    L("Google: name + location", g(`${q}${loc}`)),
-    L("DuckDuckGo", ddg(`${q}${loc}`)),
-    L("Google Images", `https://www.google.com/search?tbm=isch&q=${enc(full+(city?" "+city:""))}`),
+  const q=`"${full}"`,loc=city?` "${city}"`:st?` "${stFull}"`:"";
+  const social=[
+    L("Facebook people",`https://www.facebook.com/search/people/?q=${enc(full)}`),
+    L("LinkedIn (via Google)",g(`site:linkedin.com/in ${q}${loc}`)),
+    L("Instagram (via Google)",g(`site:instagram.com ${q}`)),
+    L("X / Twitter (via Google)",g(`site:x.com OR site:twitter.com ${q}`)),
+    L("TikTok (via Google)",g(`site:tiktok.com ${q}`)),
+    L("Google: name + location",g(`${q}${loc}`)),
+    L("DuckDuckGo",ddg(`${q}${loc}`)),
+    L("Google Images",`https://www.google.com/search?tbm=isch&q=${enc(full+(city?" "+city:""))}`),
   ];
-  const records = [
-    L("Court records (JudyRecords)", `https://www.judyrecords.com/getSearchResults/?search=${enc(q)}`),
-    L("Obituaries (Google)", g(`${q} obituary${loc}`)),
-    L("Find a Grave", `https://www.findagrave.com/memorial/search?firstname=${enc(p.first)}&lastname=${enc(p.last)}${stFull?`&location=${enc(stFull)}`:""}`),
-    L("Voter records (Google)", g(`site:voterrecords.com ${q}`)),
-    L("Business filings (OpenCorporates)", `https://opencorporates.com/officers?q=${enc(full)}${st?`&jurisdiction_code=us_${stl}`:""}`),
-    L("Property (Google)", g(`${q}${loc} property owner parcel`)),
-    L("Sex offender registry (NSOPW)", "https://www.nsopw.gov/search-public-sex-offender-registries"),
-    L("Federal inmate locator (BOP)", "https://www.bop.gov/inmateloc/"),
+  const records=[
+    L("Court records (JudyRecords)",`https://www.judyrecords.com/getSearchResults/?search=${enc(q)}`),
+    L("Obituaries (Google)",g(`${q} obituary${loc}`)),
+    L("Find a Grave",`https://www.findagrave.com/memorial/search?firstname=${enc(p.first)}&lastname=${enc(p.last)}${stFull?`&location=${enc(stFull)}`:""}`),
+    L("Voter records (Google)",g(`site:voterrecords.com ${q}`)),
+    L("Business filings (OpenCorporates)",`https://opencorporates.com/officers?q=${enc(full)}${st?`&jurisdiction_code=us_${stl}`:""}`),
+    L("Property (Google)",g(`${q}${loc} property owner parcel`)),
+    L("Sex offender registry (NSOPW)","https://www.nsopw.gov/search-public-sex-offender-registries"),
+    L("Federal inmate locator (BOP)","https://www.bop.gov/inmateloc/"),
   ];
-  return [["People-search sites", people], ["Social & web", social], ["Public records", records]];
+  return[["People-search sites",people],["Social &amp; web",social],["Public records",records]];
 }
-
 function phoneSources(ph){
-  const people = [
-    L("FastPeopleSearch", `https://www.fastpeoplesearch.com/${ph.dash}`),
-    L("TruePeopleSearch", `https://www.truepeoplesearch.com/resultphone?phoneno=${enc(ph.parenTight)}`),
-    L("ThatsThem", `https://thatsthem.com/phone/${ph.dash}`),
-    L("USPhoneBook", `https://www.usphonebook.com/${ph.dash}`),
-    L("CyberBackgroundChecks", `https://www.cyberbackgroundchecks.com/phone/${ph.dash}`),
-    L("SearchPeopleFree", `https://www.searchpeoplefree.com/phone-lookup/${ph.dash}`),
-    L("Whitepages", `https://www.whitepages.com/phone/1-${ph.dash}`, "partial"),
-    L("Spokeo", `https://www.spokeo.com/${ph.dash}`, "paid"),
-    L("Spy Dialer", "https://www.spydialer.com/"),
+  const people=[
+    L("FastPeopleSearch",`https://www.fastpeoplesearch.com/${ph.dash}`),
+    L("TruePeopleSearch",`https://www.truepeoplesearch.com/resultphone?phoneno=${enc(ph.parenTight)}`),
+    L("ThatsThem",`https://thatsthem.com/phone/${ph.dash}`),
+    L("USPhoneBook",`https://www.usphonebook.com/${ph.dash}`),
+    L("CyberBackgroundChecks",`https://www.cyberbackgroundchecks.com/phone/${ph.dash}`),
+    L("SearchPeopleFree",`https://www.searchpeoplefree.com/phone-lookup/${ph.dash}`),
+    L("Whitepages",`https://www.whitepages.com/phone/1-${ph.dash}`,"partial"),
+    L("Spokeo",`https://www.spokeo.com/${ph.dash}`,"paid"),
+    L("Spy Dialer","https://www.spydialer.com/"),
+    L("NumLookup",`https://www.numlookup.com/${ph.d}`),
   ];
-  const web = [
-    L("Google: all formats", g(`"${ph.dash}" OR "${ph.paren}" OR "${ph.d}" OR "${ph.dots}"`)),
-    L("DuckDuckGo", ddg(`"${ph.dash}" OR "${ph.paren}"`)),
-    L("Facebook search", `https://www.facebook.com/search/top?q=${ph.d}`),
-    L("WhatsApp (opens chat if registered)", `https://wa.me/1${ph.d}`),
-    L("Spam reports (Google)", g(`"${ph.dash}" spam OR scam OR "who called"`)),
-    L("Craigslist / ads (Google)", g(`"${ph.dash}" OR "${ph.d}" site:craigslist.org OR site:offerup.com`)),
+  const web=[
+    L("Google: all formats",g(`"${ph.dash}" OR "${ph.paren}" OR "${ph.d}" OR "${ph.dots}"`)),
+    L("DuckDuckGo",ddg(`"${ph.dash}" OR "${ph.paren}"`)),
+    L("Facebook search",`https://www.facebook.com/search/top?q=${ph.d}`),
+    L("WhatsApp (opens chat if registered)",`https://wa.me/1${ph.d}`),
+    L("Spam reports (Google)",g(`"${ph.dash}" spam OR scam OR "who called"`)),
+    L("Classifieds (Google)",g(`"${ph.dash}" OR "${ph.d}" site:craigslist.org OR site:offerup.com`)),
   ];
-  return [["Reverse phone lookup", people], ["Web & messaging", web]];
+  return[["Reverse phone lookup",people],["Web &amp; messaging",web]];
 }
-
 function emailSources(e){
-  const people = [
-    L("ThatsThem", `https://thatsthem.com/email/${enc(e)}`),
-    L("CyberBackgroundChecks", `https://www.cyberbackgroundchecks.com/email/${enc(e)}`),
-    L("Epieos (Google/accounts)", `https://epieos.com/?q=${enc(e)}&t=email`, "partial"),
-    L("Spokeo", `https://www.spokeo.com/email-search/search?e=${enc(e)}`, "paid"),
+  const people=[
+    L("ThatsThem",`https://thatsthem.com/email/${enc(e)}`),
+    L("CyberBackgroundChecks",`https://www.cyberbackgroundchecks.com/email/${enc(e)}`),
+    L("Epieos (Google/accounts)",`https://epieos.com/?q=${enc(e)}&t=email`,"partial"),
+    L("Spokeo",`https://www.spokeo.com/email-search/search?e=${enc(e)}`,"paid"),
   ];
-  const breach = [
-    L("Have I Been Pwned", `https://haveibeenpwned.com/account/${enc(e)}`),
-    L("Intelligence X", `https://intelx.io/?s=${enc(e)}`, "partial"),
-    L("DeHashed", `https://dehashed.com/search?query=${enc(e)}`, "paid"),
-    L("Hunter email verifier", `https://hunter.io/email-verifier/${enc(e)}`, "partial"),
+  const breach=[
+    L("Have I Been Pwned",`https://haveibeenpwned.com/account/${enc(e)}`),
+    L("XposedOrNot",`https://xposedornot.com/email/${enc(e)}`),
+    L("Intelligence X",`https://intelx.io/?s=${enc(e)}`,"partial"),
+    L("Hunter verifier",`https://hunter.io/email-verifier/${enc(e)}`,"partial"),
   ];
-  const web = [
-    L("Google exact match", g(`"${e}"`)),
-    L("DuckDuckGo", ddg(`"${e}"`)),
-    L("GitHub commits", `https://github.com/search?q=${enc(e)}&type=commits`),
-    L("PGP keyserver", `https://keys.openpgp.org/search?q=${enc(e)}`),
-    L("Pastebins (Google)", g(`"${e}" site:pastebin.com OR site:ghostbin.com OR site:justpaste.it`)),
+  const web=[
+    L("Google exact match",g(`"${e}"`)),
+    L("DuckDuckGo",ddg(`"${e}"`)),
+    L("GitHub commits",`https://github.com/search?q=${enc(e)}&type=commits`),
+    L("PGP keyserver",`https://keys.openpgp.org/search?q=${enc(e)}`),
+    L("Pastebins (Google)",g(`"${e}" site:pastebin.com OR site:ghostbin.com OR site:justpaste.it`)),
   ];
-  return [["People-search", people], ["Breaches & verification", breach], ["Web", web]];
+  return[["People-search",people],["Breach &amp; verification links",breach],["Web",web]];
 }
-
-const USER_SITES = [
-  ["GitHub","https://github.com/{u}"],["GitLab","https://gitlab.com/{u}"],["Reddit","https://www.reddit.com/user/{u}"],
-  ["X / Twitter","https://x.com/{u}"],["Instagram","https://www.instagram.com/{u}/"],["TikTok","https://www.tiktok.com/@{u}"],
-  ["YouTube","https://www.youtube.com/@{u}"],["Twitch","https://www.twitch.tv/{u}"],["Facebook","https://www.facebook.com/{u}"],
-  ["Threads","https://www.threads.net/@{u}"],["Bluesky","https://bsky.app/profile/{u}.bsky.social"],["Snapchat","https://www.snapchat.com/add/{u}"],
-  ["Pinterest","https://www.pinterest.com/{u}/"],["Tumblr","https://{u}.tumblr.com"],["Medium","https://medium.com/@{u}"],
-  ["Telegram","https://t.me/{u}"],["Steam","https://steamcommunity.com/id/{u}"],["SoundCloud","https://soundcloud.com/{u}"],
-  ["Spotify (Google)","https://www.google.com/search?q=site%3Aopen.spotify.com%2Fuser+%22{u}%22"],["Vimeo","https://vimeo.com/{u}"],["Flickr","https://www.flickr.com/people/{u}"],
-  ["DeviantArt","https://www.deviantart.com/{u}"],["Patreon","https://www.patreon.com/{u}"],["Linktree","https://linktr.ee/{u}"],
-  ["About.me","https://about.me/{u}"],["Keybase","https://keybase.io/{u}"],["Dev.to","https://dev.to/{u}"],
-  ["Hacker News","https://news.ycombinator.com/user?id={u}"],["Replit","https://replit.com/@{u}"],["Chess.com","https://www.chess.com/member/{u}"],
-  ["Lichess","https://lichess.org/@/{u}"],["Letterboxd","https://letterboxd.com/{u}/"],["Duolingo","https://www.duolingo.com/profile/{u}"],
-  ["Cash App","https://cash.app/${u}"],["Venmo","https://account.venmo.com/u/{u}"],["Roblox (search)","https://www.roblox.com/search/users?keyword={u}"],
-  ["Linkedin","https://www.linkedin.com/in/{u}"],["Mastodon (search)","https://mastodon.social/@{u}"],["Kick","https://kick.com/{u}"],
-];
+const USER_SITES=[["GitHub","https://github.com/{u}"],["GitLab","https://gitlab.com/{u}"],["Reddit","https://www.reddit.com/user/{u}"],["X / Twitter","https://x.com/{u}"],["Instagram","https://www.instagram.com/{u}/"],["TikTok","https://www.tiktok.com/@{u}"],["YouTube","https://www.youtube.com/@{u}"],["Twitch","https://www.twitch.tv/{u}"],["Facebook","https://www.facebook.com/{u}"],["Threads","https://www.threads.net/@{u}"],["Bluesky","https://bsky.app/profile/{u}.bsky.social"],["Snapchat","https://www.snapchat.com/add/{u}"],["Pinterest","https://www.pinterest.com/{u}/"],["Tumblr","https://{u}.tumblr.com"],["Medium","https://medium.com/@{u}"],["Telegram","https://t.me/{u}"],["Steam","https://steamcommunity.com/id/{u}"],["SoundCloud","https://soundcloud.com/{u}"],["Spotify (Google)","https://www.google.com/search?q=site%3Aopen.spotify.com%2Fuser+%22{u}%22"],["Vimeo","https://vimeo.com/{u}"],["Flickr","https://www.flickr.com/people/{u}"],["DeviantArt","https://www.deviantart.com/{u}"],["Patreon","https://www.patreon.com/{u}"],["Linktree","https://linktr.ee/{u}"],["About.me","https://about.me/{u}"],["Keybase","https://keybase.io/{u}"],["Dev.to","https://dev.to/{u}"],["Hacker News","https://news.ycombinator.com/user?id={u}"],["Replit","https://replit.com/@{u}"],["Chess.com","https://www.chess.com/member/{u}"],["Lichess","https://lichess.org/@/{u}"],["Letterboxd","https://letterboxd.com/{u}/"],["Duolingo","https://www.duolingo.com/profile/{u}"],["Cash App","https://cash.app/${u}"],["Venmo","https://account.venmo.com/u/{u}"],["Roblox (search)","https://www.roblox.com/search/users?keyword={u}"],["LinkedIn","https://www.linkedin.com/in/{u}"],["Mastodon","https://mastodon.social/@{u}"],["Kick","https://kick.com/{u}"],["Gravatar","https://gravatar.com/{u}"],["Pinterest","https://pinterest.com/{u}"]];
 function userSources(u){
-  const profiles = USER_SITES.map(([n,t]) => L(n, t.replaceAll("{u}", enc(u))));
-  const tools = [
-    L("WhatsMyName (600+ sites)", `https://whatsmyname.app/?q=${enc(u)}`),
-    L("Namechk", `https://namechk.com/`),
-    L("Google exact match", g(`"${u}"`)),
-    L("Google: in URLs", g(`inurl:${u}`)),
-    L("Wayback Machine (Twitter)", `https://web.archive.org/web/*/twitter.com/${enc(u)}*`),
+  const profiles=USER_SITES.map(([n,t])=>L(n,t.replaceAll("{u}",enc(u))));
+  const tools=[
+    L("WhatsMyName (600+ sites)",`https://whatsmyname.app/?q=${enc(u)}`),
+    L("Namechk",`https://namechk.com/`),
+    L("Instant Username Search",`https://instantusername.com/#/?q=${enc(u)}`),
+    L("Google exact match",g(`"${u}"`)),
+    L("Google: in URLs",g(`inurl:${u}`)),
+    L("Wayback (Twitter)",`https://web.archive.org/web/*/twitter.com/${enc(u)}*`),
   ];
-  return [["Profile URLs (not verified, open to check)", profiles], ["Username search tools", tools]];
+  return[["Profile URLs — open to confirm",profiles],["Username search tools",tools]];
 }
-
 function addressSources(a){
-  const st = a.state, city = a.city;
-  const full = [a.street, city, [st, a.zip].filter(Boolean).join(" ")].filter(Boolean).join(", ");
-  const cs = [city, st].filter(Boolean).join(", ") + (a.zip ? " " + a.zip : "");
-  const people = [
-    L("FastPeopleSearch", `https://www.fastpeoplesearch.com/address/${slug(a.street)}_${[slug(city), st.toLowerCase()].filter(Boolean).join("-")}`),
-    L("TruePeopleSearch", `https://www.truepeoplesearch.com/resultaddress?streetaddress=${enc(a.street)}&citystatezip=${enc(cs.trim())}`),
-    L("ThatsThem", `https://thatsthem.com/address/${[tcSlug(a.street), tcSlug(city), st, a.zip].filter(Boolean).join("-")}`),
-    L("Whitepages", `https://www.whitepages.com/address/${tcSlug(a.street)}/${[tcSlug(city), st].filter(Boolean).join("-")}`, "partial"),
-    L("CyberBackgroundChecks (Google)", g(`site:cyberbackgroundchecks.com "${a.street}" "${city}"`)),
+  const st=a.state,city=a.city,full=[a.street,city,[st,a.zip].filter(Boolean).join(" ")].filter(Boolean).join(", "),cs=([city,st].filter(Boolean).join(", ")+(a.zip?" "+a.zip:"")).trim();
+  const people=[
+    L("FastPeopleSearch",`https://www.fastpeoplesearch.com/address/${slug(a.street)}_${[slug(city),st.toLowerCase()].filter(Boolean).join("-")}`),
+    L("TruePeopleSearch",`https://www.truepeoplesearch.com/resultaddress?streetaddress=${enc(a.street)}&citystatezip=${enc(cs)}`),
+    L("ThatsThem",`https://thatsthem.com/address/${[tcSlug(a.street),tcSlug(city),st,a.zip].filter(Boolean).join("-")}`),
+    L("Whitepages",`https://www.whitepages.com/address/${tcSlug(a.street)}/${[tcSlug(city),st].filter(Boolean).join("-")}`,"partial"),
+    L("CyberBackgroundChecks (Google)",g(`site:cyberbackgroundchecks.com "${a.street}" "${city}"`)),
   ];
-  const prop = [
-    L("Google Maps", `https://www.google.com/maps/search/?api=1&query=${enc(full)}`),
-    L("Zillow", `https://www.zillow.com/homes/${enc(full)}_rb/`),
-    L("Redfin / Realtor (Google)", g(`"${a.street}" "${city}" site:redfin.com OR site:realtor.com`)),
-    L("County assessor (Google)", g(`${city} ${STATES[st]||st} county property appraiser parcel search`)),
-    L("Google exact match", g(`"${a.street}" "${city}"`)),
-    L("Business at address (OpenCorporates)", `https://opencorporates.com/companies?q=${enc(a.street)}`),
+  const prop=[
+    L("Google Maps",`https://www.google.com/maps/search/?api=1&query=${enc(full)}`),
+    L("Zillow",`https://www.zillow.com/homes/${enc(full)}_rb/`),
+    L("Redfin / Realtor (Google)",g(`"${a.street}" "${city}" site:redfin.com OR site:realtor.com`)),
+    L("County assessor (Google)",g(`${city} ${STATES[st]||st} county property appraiser parcel search`)),
+    L("Google exact match",g(`"${a.street}" "${city}"`)),
+    L("Business at address (OpenCorporates)",`https://opencorporates.com/companies?q=${enc(a.street)}`),
   ];
-  return [["Residents", people], ["Property & map", prop]];
+  return[["Residents",people],["Property &amp; map",prop]];
 }
-
-function domainSources(d, isIP){
-  if (isIP) return [["IP intelligence", [
-    L("ipinfo.io", `https://ipinfo.io/${d}`), L("Shodan", `https://www.shodan.io/host/${d}`, "partial"),
-    L("AbuseIPDB", `https://www.abuseipdb.com/check/${d}`), L("Reverse IP (ViewDNS)", `https://viewdns.info/reverseip/?host=${d}&t=1`),
-    L("GreyNoise", `https://viz.greynoise.io/ip/${d}`), L("Google", g(`"${d}"`)),
+function domainSources(d,isIP){
+  if(isIP)return[["IP intelligence",[
+    L("ipinfo.io",`https://ipinfo.io/${d}`),L("Shodan",`https://www.shodan.io/host/${d}`,"partial"),
+    L("AbuseIPDB",`https://www.abuseipdb.com/check/${d}`),L("Reverse IP (ViewDNS)",`https://viewdns.info/reverseip/?host=${d}&t=1`),
+    L("GreyNoise",`https://viz.greynoise.io/ip/${d}`),L("Censys",`https://search.censys.io/hosts/${d}`,"partial"),L("Google",g(`"${d}"`)),
   ]]];
-  return [["Domain intelligence", [
-    L("WHOIS (who.is)", `https://who.is/whois/${d}`), L("ICANN lookup", `https://lookup.icann.org/en/lookup?name=${d}`),
-    L("Certificates (crt.sh)", `https://crt.sh/?q=${enc(d)}`), L("SecurityTrails DNS", `https://securitytrails.com/domain/${d}/dns`, "partial"),
-    L("urlscan.io", `https://urlscan.io/search/#${enc(d)}`), L("Wayback Machine", `https://web.archive.org/web/*/${d}`),
-    L("Reverse WHOIS (ViewDNS)", `https://viewdns.info/reversewhois/?q=${d}`), L("Emails on domain (Google)", g(`"@${d}"`)),
+  return[["Domain intelligence",[
+    L("WHOIS (who.is)",`https://who.is/whois/${d}`),L("ICANN lookup",`https://lookup.icann.org/en/lookup?name=${d}`),
+    L("Certificates (crt.sh)",`https://crt.sh/?q=${enc(d)}`),L("SecurityTrails DNS",`https://securitytrails.com/domain/${d}/dns`,"partial"),
+    L("urlscan.io",`https://urlscan.io/search/#${enc(d)}`),L("Wayback Machine",`https://web.archive.org/web/*/${d}`),
+    L("Reverse WHOIS (ViewDNS)",`https://viewdns.info/reversewhois/?q=${d}`),L("Emails on domain (Google)",g(`"@${d}"`)),
   ]]];
 }
 
-/* ---------- rendering ---------- */
-function renderLinks(groups){
-  return groups.map(([t, links]) => `
-    <div class="group-title">${esc(t)}</div>
-    <div class="links">${links.map(l => `<a href="${esc(l.url)}" target="_blank" rel="noopener noreferrer">${esc(l.name)}<span class="tag ${l.tag==="paid"?"paid":""}">${l.tag}</span></a>`).join("")}</div>`).join("");
-}
-function card(id, heading, sub, inner){
-  const el = document.createElement("section");
-  el.className = "card"; el.id = id;
-  el.innerHTML = `<header><h2>${esc(heading)}<small>${esc(sub)}</small></h2><button class="small" data-openall>Open all</button></header><div class="body">${inner}</div>`;
-  el.querySelector("[data-openall]").onclick = () => {
-    const links = [...el.querySelectorAll(".links a")].map(a=>a.href);
-    if (links.length > 8 && !confirm(`Open ${links.length} tabs? Your browser may ask you to allow pop-ups.`)) return;
-    links.forEach(u => window.open(u, "_blank", "noopener"));
-  };
-  $("#results").appendChild(el);
-  return el;
-}
-const fact = (k, v) => `<div class="fact"><b>${esc(k)}</b><span>${v}</span></div>`;
-function hit(name, url, status, meta="", img=""){
-  const cls = status==="Found"?"ok":status==="Not found"?"no":"wait";
-  return `<div class="hit">${img?`<img src="${esc(img)}" alt="">`:""}<div><div><a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(name)}</a> · <span class="st ${cls}">${esc(status)}</span></div>${meta?`<div class="meta">${meta}</div>`:""}</div></div>`;
-}
-function pivots(items){
-  return `<div class="pivot">${items.map(([label, q]) => `<button type="button" data-pivot="${esc(q)}">${esc(label)}</button>`).join("")}</div>`;
-}
+/* ============ rendering ============ */
+function renderLinks(groups){return groups.map(([t,links])=>`<div class="group-title">${t}</div><div class="links">${links.map(l=>`<a href="${esc(l.url)}" target="_blank" rel="noopener noreferrer">${esc(l.name)}<span class="tag ${l.tag}">${l.tag}</span></a>`).join("")}</div>`).join("");}
+const ICONS={name:'<circle cx="12" cy="8" r="4"/><path d="M4 21v-1a7 7 0 0 1 14 0v1"/>',phone:'<path d="M5 4h4l2 5-3 2a11 11 0 0 0 5 5l2-3 5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>',email:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',username:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',address:'<path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>',domain:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>',ip:'<rect x="3" y="4" width="18" height="7" rx="1.5"/><rect x="3" y="13" width="18" height="7" rx="1.5"/><path d="M7 7.5h.01M7 16.5h.01"/>'};
+function card(id,icon,heading,sub,inner){const el=document.createElement("section");el.className="card";el.id=id;el.innerHTML=`<header><div class="ht"><div class="ic"><svg viewBox="0 0 24 24">${ICONS[icon]||ICONS.name}</svg></div><h2>${esc(heading)}<small>${sub}</small></h2></div><button class="small" data-openall>Open all tabs</button></header><div class="body">${inner}</div>`;el.querySelector("[data-openall]").onclick=()=>{const links=[...el.querySelectorAll(".links a")].map(a=>a.href);if(links.length>8&&!confirm(`Open ${links.length} tabs? Your browser may ask you to allow pop-ups.`))return;links.forEach(u=>window.open(u,"_blank","noopener"));};$("#results").appendChild(el);return el;}
+const fact=(k,v)=>`<div class="fact"><b>${esc(k)}</b><span>${v}</span></div>`;
+function hit(name,url,status,meta="",img=""){const cls=status==="Found"?"ok":status==="Not found"?"no":"wait";const badge=status==="Checking…"?`<span class="st wait"><span class="spin"></span></span>`:`<span class="st ${cls}">${esc(status)}</span>`;return `<div class="hit">${img?`<img src="${esc(img)}" alt="" onerror="this.style.display='none'">`:""}<div style="min-width:0"><div class="nm">${url?`<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(name)}</a>`:esc(name)} ${badge}</div>${meta?`<div class="meta">${meta}</div>`:""}</div></div>`;}
+function pivots(items){return items.length?`<div class="pivot">${items.map(([l,q])=>`<button type="button" data-pivot="${esc(q)}">${esc(l)}</button>`).join("")}</div>`:"";}
 
-/* ---------- live checks ---------- */
-async function liveUsername(u, box){
-  const checks = [
-    ["GitHub", `https://github.com/${u}`, async () => { const r = await getJSON(`https://api.github.com/users/${enc(u)}`); if (r.status===404) return {s:"Not found"}; if (!r.ok) return null; const d=r.data; return {s:"Found", img:d.avatar_url, meta:[d.name,d.location,d.company,d.bio,d.blog,d.email,`joined ${d.created_at?.slice(0,10)}`].filter(Boolean).map(esc).join(" · ")}; }],
-    ["GitLab", `https://gitlab.com/${u}`, async () => { const r = await getJSON(`https://gitlab.com/api/v4/users?username=${enc(u)}`); if (!r.ok) return null; const d=r.data?.[0]; return d?{s:"Found", img:d.avatar_url, meta:esc(d.name||"")}:{s:"Not found"}; }],
-    ["Bluesky", `https://bsky.app/profile/${u}.bsky.social`, async () => { const r = await getJSON(`https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile?actor=${enc(u.includes(".")?u:u+".bsky.social")}`); if (r.status===400) return {s:"Not found"}; if (!r.ok) return null; const d=r.data; return {s:"Found", img:d.avatar, meta:[d.displayName, d.description, `${d.followersCount} followers`].filter(Boolean).map(esc).join(" · ")}; }],
-    ["Chess.com", `https://www.chess.com/member/${u}`, async () => { const r = await getJSON(`https://api.chess.com/pub/player/${enc(u.toLowerCase())}`); if (r.status===404) return {s:"Not found"}; if (!r.ok) return null; const d=r.data; return {s:"Found", img:d.avatar, meta:[d.name, d.location, d.country?.split("/").pop()].filter(Boolean).map(esc).join(" · ")}; }],
-    ["Lichess", `https://lichess.org/@/${u}`, async () => { const r = await getJSON(`https://lichess.org/api/user/${enc(u)}`); if (r.status===404) return {s:"Not found"}; if (!r.ok) return null; const d=r.data; return {s:"Found", meta:[d.profile?.realName, d.profile?.location, d.profile?.bio].filter(Boolean).map(esc).join(" · ")}; }],
-    ["Hacker News", `https://news.ycombinator.com/user?id=${u}`, async () => { const r = await getJSON(`https://hacker-news.firebaseio.com/v0/user/${enc(u)}.json`); if (!r.ok) return null; const d=r.data; return d?{s:"Found", meta:`karma ${d.karma}${d.about?" · "+esc(d.about.replace(/<[^>]+>/g," ").slice(0,140)):""}`}:{s:"Not found"}; }],
-    ["Keybase", `https://keybase.io/${u}`, async () => { const r = await getJSON(`https://keybase.io/_/api/1.0/user/lookup.json?usernames=${enc(u)}`); if (!r.ok) return null; const d=r.data?.them?.[0]; return d?{s:"Found", img:d.pictures?.primary?.url, meta:esc([d.profile?.full_name,d.profile?.location,d.profile?.bio].filter(Boolean).join(" · "))}:{s:"Not found"}; }],
+/* ============ profile aggregator ============ */
+const Profile={reset(seed){this.names=new Set();this.locs=new Set();this.bios=[];this.avatar="";this.links=[];this.seed=seed||"";this.el=null;},
+  add(d){if(d.name)this.names.add(d.name);if(d.loc)this.locs.add(d.loc);if(d.bio&&this.bios.length<2&&d.bio.length>8)this.bios.push(d.bio);if(d.avatar&&!this.avatar)this.avatar=d.avatar;if(d.link)this.links.push(d.link);this.render();},
+  mount(){const sec=document.createElement("section");sec.className="profile";sec.id="profilePanel";$("#results").prepend(sec);this.el=sec;this.render();},
+  render(){if(!this.el)return;const nm=[...this.names][0]||this.seed||"Unknown";const extra=[...this.names].slice(1);
+    const av=this.avatar?`<img class="avatar" src="${esc(this.avatar)}" alt="" onerror="this.outerHTML='<div class=\\'avatar ph0\\'>${esc((nm[0]||'?').toUpperCase())}</div>'">`:`<div class="avatar ph0">${esc((nm[0]||"?").toUpperCase())}</div>`;
+    const rows=[];
+    if(extra.length)rows.push(["Also seen as",extra.map(x=>`<span class="pill">${esc(x)}</span>`).join("")]);
+    if(this.locs.size)rows.push(["Location",[...this.locs].map(x=>`<span class="pill">${esc(x)}</span>`).join("")]);
+    if(this.bios.length)rows.push(["Bio",`<span>${esc(this.bios[0])}</span>`]);
+    if(this.links.length)rows.push(["Confirmed accounts",this.links.map(l=>`<a class="pill lk" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.site)}</a>`).join("")]);
+    this.el.innerHTML=`<div class="ph">${av}<div class="pmeta"><h2>${esc(nm)}</h2><div class="sub">${this.links.length?`Found on ${this.links.length} platform${this.links.length>1?"s":""}`:"Searching public sources…"}${this.locs.size?" · "+esc([...this.locs][0]):""}</div></div><div class="pcount"><b>${this.links.length}</b><span>accounts</span></div></div>${rows.length?`<div class="pbody">${rows.map(([k,v])=>`<div class="prow"><div class="k">${k}</div><div class="v">${v}</div></div>`).join("")}</div>`:""}`;}
+};
+
+/* ============ live checks ============ */
+async function liveUsername(u,box){
+  const checks=[
+    ["GitHub",`https://github.com/${u}`,async()=>{const r=await getJSON(`https://api.github.com/users/${enc(u)}`);if(r.status===404)return{s:"Not found"};if(!r.ok)return null;const d=r.data;Profile.add({name:d.name,loc:d.location,bio:d.bio,avatar:d.avatar_url,link:{site:"GitHub",url:d.html_url}});return{s:"Found",img:d.avatar_url,meta:[d.name,d.location,d.company,d.bio,d.blog,d.email,`${d.followers} followers`,`joined ${d.created_at?.slice(0,10)}`].filter(Boolean).map(esc).join(" · ")};}],
+    ["GitLab",`https://gitlab.com/${u}`,async()=>{const r=await getJSON(`https://gitlab.com/api/v4/users?username=${enc(u)}`);if(!r.ok)return null;const d=r.data?.[0];if(!d)return{s:"Not found"};Profile.add({name:d.name,avatar:d.avatar_url,link:{site:"GitLab",url:d.web_url}});return{s:"Found",img:d.avatar_url,meta:esc(d.name||"")};}],
+    ["Mastodon",`https://mastodon.social/@${u}`,async()=>{const r=await getJSON(`https://mastodon.social/api/v1/accounts/lookup?acct=${enc(u)}`);if(r.status===404)return{s:"Not found"};if(!r.ok)return null;const d=r.data;const bio=(d.note||"").replace(/<[^>]+>/g," ").trim();Profile.add({name:d.display_name,bio,avatar:d.avatar_static,link:{site:"Mastodon",url:d.url}});return{s:"Found",img:d.avatar_static,meta:[d.display_name,`${d.followers_count} followers`,`${d.statuses_count} posts`,bio.slice(0,100)].filter(Boolean).map(esc).join(" · ")};}],
+    ["Bluesky",`https://bsky.app/profile/${u}.bsky.social`,async()=>{const h=u.includes(".")?u:u+".bsky.social";const r=await getJSON(`https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile?actor=${enc(h)}`);if(r.status===400)return{s:"Not found"};if(!r.ok)return null;const d=r.data;Profile.add({name:d.displayName,bio:d.description,avatar:d.avatar,link:{site:"Bluesky",url:`https://bsky.app/profile/${d.handle}`}});return{s:"Found",img:d.avatar,meta:[d.displayName,d.description,`${d.followersCount} followers`].filter(Boolean).map(esc).join(" · ")};}],
+    ["Chess.com",`https://www.chess.com/member/${u}`,async()=>{const r=await getJSON(`https://api.chess.com/pub/player/${enc(u.toLowerCase())}`);if(r.status===404)return{s:"Not found"};if(!r.ok)return null;const d=r.data;Profile.add({name:d.name,loc:d.location,avatar:d.avatar,link:{site:"Chess.com",url:d.url}});return{s:"Found",img:d.avatar,meta:[d.name,d.location,d.country?.split("/").pop()].filter(Boolean).map(esc).join(" · ")};}],
+    ["Lichess",`https://lichess.org/@/${u}`,async()=>{const r=await getJSON(`https://lichess.org/api/user/${enc(u)}`);if(r.status===404)return{s:"Not found"};if(!r.ok)return null;const d=r.data;if(d.closed)return{s:"Not found"};Profile.add({name:d.profile?.realName,loc:d.profile?.location,bio:d.profile?.bio,link:{site:"Lichess",url:d.url}});return{s:"Found",meta:[d.profile?.realName,d.profile?.location,d.profile?.bio].filter(Boolean).map(esc).join(" · ")||"Profile exists"};}],
+    ["Hacker News",`https://news.ycombinator.com/user?id=${u}`,async()=>{const r=await getJSON(`https://hacker-news.firebaseio.com/v0/user/${enc(u)}.json`);if(!r.ok)return null;const d=r.data;if(!d)return{s:"Not found"};Profile.add({link:{site:"Hacker News",url:`https://news.ycombinator.com/user?id=${u}`}});return{s:"Found",meta:`karma ${d.karma}${d.about?" · "+esc(d.about.replace(/<[^>]+>/g," ").slice(0,140)):""}`};}],
+    ["Keybase",`https://keybase.io/${u}`,async()=>{const r=await getJSON(`https://keybase.io/_/api/1.0/user/lookup.json?usernames=${enc(u)}`);if(!r.ok)return null;const d=r.data?.them?.[0];if(!d)return{s:"Not found"};const img=d.pictures?.primary?.url;Profile.add({name:d.profile?.full_name,loc:d.profile?.location,bio:d.profile?.bio,avatar:img,link:{site:"Keybase",url:`https://keybase.io/${d.basics?.username||u}`}});return{s:"Found",img,meta:esc([d.profile?.full_name,d.profile?.location,d.profile?.bio].filter(Boolean).join(" · "))||"Profile exists"};}],
   ];
-  box.innerHTML = checks.map(([n,url],i) => `<div id="lc${i}">${hit(n,url,"Checking…")}</div>`).join("");
-  await Promise.all(checks.map(async ([n,url,fn],i) => {
-    let res = null; try { res = await fn(); } catch {}
-    box.querySelector("#lc"+i).innerHTML = hit(n, url, res ? res.s : "Couldn't check", res?.meta||"", res?.img||"");
-  }));
+  box.innerHTML=checks.map(([n,url],i)=>`<div id="lc${i}">${hit(n,url,"Checking…")}</div>`).join("");
+  await Promise.all(checks.map(async([n,url,fn],i)=>{let res=null;try{res=await fn();}catch{}box.querySelector("#lc"+i).innerHTML=hit(n,url,res?res.s:"Couldn't check",res?.meta||"",res?.img||"");}));
 }
-async function liveEmail(e, box){
-  const hash = await sha256(e.trim().toLowerCase()).catch(()=>null);
-  const domain = e.split("@")[1];
-  let html = "";
-  if (hash) html += `<div id="grav">${hit("Gravatar", `https://gravatar.com/${hash}`, "Checking…")}</div>`;
-  html += `<div id="mx">${hit("Mail server (MX)", `https://mxtoolbox.com/SuperTool.aspx?action=mx%3a${enc(domain)}`, "Checking…")}</div>`;
-  box.innerHTML = html;
-  if (hash){
-    const img = new Image();
-    img.onload = async () => {
-      let meta = "";
-      const r = await getJSON(`https://api.gravatar.com/v3/profiles/${hash}`);
-      if (r.ok && r.data) meta = [r.data.display_name, r.data.location, r.data.job_title, r.data.company, r.data.description].filter(Boolean).map(esc).join(" · ");
-      box.querySelector("#grav").innerHTML = hit("Gravatar", r.data?.profile_url || `https://gravatar.com/${hash}`, "Found", meta || "Has a profile photo", img.src);
-    };
-    img.onerror = () => box.querySelector("#grav").innerHTML = hit("Gravatar", `https://gravatar.com/${hash}`, "Not found", "No avatar registered to this email");
-    img.src = `https://gravatar.com/avatar/${hash}?s=80&d=404`;
-  }
-  const r = await getJSON(`https://cloudflare-dns.com/dns-query?name=${enc(domain)}&type=MX`, {headers:{accept:"application/dns-json"}});
-  const mx = (r.data?.Answer||[]).filter(a=>a.type===15).map(a=>a.data.split(" ").pop().replace(/\.$/,""));
-  let prov = "";
-  const m = mx.join(" ");
-  if (/google|googlemail/i.test(m)) prov = "Google Workspace / Gmail";
-  else if (/outlook|microsoft/i.test(m)) prov = "Microsoft 365 / Outlook";
-  else if (/protonmail/i.test(m)) prov = "Proton Mail";
-  else if (/yahoo/i.test(m)) prov = "Yahoo";
-  else if (/icloud|apple/i.test(m)) prov = "iCloud";
-  else if (/zoho/i.test(m)) prov = "Zoho";
-  box.querySelector("#mx").innerHTML = hit("Mail server (MX)", `https://mxtoolbox.com/SuperTool.aspx?action=mx%3a${enc(domain)}`,
-    !r.ok ? "Couldn't check" : mx.length ? "Found" : "Not found", mx.length ? esc((prov?prov+" · ":"") + mx.slice(0,3).join(", ")) : "Domain can't receive mail. The address may be fake.");
-}
-async function liveDomain(d, isIP, box){
-  if (isIP){
-    box.innerHTML = hit("ipinfo.io", `https://ipinfo.io/${d}`, "Checking…");
-    const r = await getJSON(`https://ipinfo.io/${enc(d)}/json`);
-    const x = r.data || {};
-    box.innerHTML = r.ok ? `<div class="facts">${["hostname","city","region","country","org","postal","timezone","loc"].filter(k=>x[k]).map(k=>fact(k, esc(x[k]))).join("")}</div>` : hit("ipinfo.io", `https://ipinfo.io/${d}`, "Couldn't check");
-    return;
-  }
-  box.innerHTML = `<div class="facts" id="dnsf">${fact("DNS","Checking…")}</div>`;
-  const types = ["A","AAAA","MX","NS","TXT"];
-  const res = await Promise.all(types.map(t => getJSON(`https://cloudflare-dns.com/dns-query?name=${enc(d)}&type=${t}`, {headers:{accept:"application/dns-json"}})));
-  const rd = await getJSON(`https://rdap.org/domain/${enc(d)}`);
-  let out = types.map((t,i) => { const a=(res[i].data?.Answer||[]).map(x=>x.data); return a.length?fact(t, esc(a.slice(0,4).join(" · ").slice(0,300))):""; }).join("");
-  if (rd.ok && rd.data){
-    const ev = Object.fromEntries((rd.data.events||[]).map(e=>[e.eventAction, e.eventDate?.slice(0,10)]));
-    const reg = (rd.data.entities||[]).find(e=>e.roles?.includes("registrar"));
-    const regName = reg?.vcardArray?.[1]?.find(v=>v[0]==="fn")?.[3];
-    if (ev.registration) out += fact("Registered", esc(ev.registration));
-    if (ev.expiration) out += fact("Expires", esc(ev.expiration));
-    if (regName) out += fact("Registrar", esc(regName));
-  }
-  box.querySelector("#dnsf").innerHTML = out || fact("DNS","No records found");
-}
-async function liveAddress(a, box){
-  const q = [a.street, a.city, a.state, a.zip].filter(Boolean).join(", ");
-  box.innerHTML = `<div class="hint">Locating…</div>`;
-  const r = await getJSON(`https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=1&countrycodes=us&q=${enc(q)}`);
-  const p = r.data?.[0];
-  if (!p){ box.innerHTML = `<div class="hint">Couldn't place this address on the map.</div>`; return; }
-  const lat=+p.lat, lon=+p.lon, dd=.004;
-  const ad = p.address||{};
-  box.innerHTML = `<iframe class="map" loading="lazy" src="https://www.openstreetmap.org/export/embed.html?bbox=${lon-dd},${lat-dd},${lon+dd},${lat+dd}&layer=mapnik&marker=${lat},${lon}"></iframe>
-    <div class="facts">${fact("Matched", esc(p.display_name))}${ad.county?fact("County", esc(ad.county)):""}${fact("Coordinates", `${lat.toFixed(5)}, ${lon.toFixed(5)}`)}${fact("Street View", `<a target="_blank" rel="noopener" href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lon}">Open</a>`)}</div>`;
-  if (ad.county){
-    const link = box.closest(".card").querySelector('.links a[href*="property%20appraiser"]');
-    if (link) link.href = g(`${ad.county} ${ad.state||""} property appraiser parcel search`);
-  }
+async function liveEmail(e,box){
+  const hash=await sha256(e.trim().toLowerCase()).catch(()=>null),domain=e.split("@")[1];
+  let html="";if(hash)html+=`<div id="grav">${hit("Gravatar",`https://gravatar.com/${hash}`,"Checking…")}</div>`;html+=`<div id="mx">${hit("Mail server (MX)","#","Checking…")}</div>`;box.innerHTML=html;
+  if(hash){const img=new Image();img.onload=async()=>{let meta="";const r=await getJSON(`https://api.gravatar.com/v3/profiles/${hash}`);if(r.ok&&r.data){meta=[r.data.display_name,r.data.location,r.data.job_title,r.data.company,r.data.description].filter(Boolean).map(esc).join(" · ");Profile.add({name:r.data.display_name,loc:r.data.location,bio:r.data.description,avatar:img.src,link:{site:"Gravatar",url:r.data.profile_url}});}else Profile.add({avatar:img.src});box.querySelector("#grav").innerHTML=hit("Gravatar",r.data?.profile_url||`https://gravatar.com/${hash}`,"Found",meta||"Has a profile photo",img.src);};img.onerror=()=>box.querySelector("#grav").innerHTML=hit("Gravatar",`https://gravatar.com/${hash}`,"Not found","No avatar registered to this email");img.src=`https://gravatar.com/avatar/${hash}?s=96&d=404`;}
+  const r=await getJSON(`https://cloudflare-dns.com/dns-query?name=${enc(domain)}&type=MX`,{headers:{accept:"application/dns-json"}});
+  const mx=(r.data?.Answer||[]).filter(a=>a.type===15).map(a=>a.data.split(" ").pop().replace(/\.$/,""));const m=mx.join(" ");
+  let prov="";if(/google|googlemail/i.test(m))prov="Google Workspace / Gmail";else if(/outlook|microsoft/i.test(m))prov="Microsoft 365 / Outlook";else if(/protonmail/i.test(m))prov="Proton Mail";else if(/yahoodns|yahoo/i.test(m))prov="Yahoo";else if(/icloud|apple/i.test(m))prov="iCloud";else if(/zoho/i.test(m))prov="Zoho";
+  box.querySelector("#mx").innerHTML=hit("Mail server (MX)",`https://mxtoolbox.com/SuperTool.aspx?action=mx%3a${enc(domain)}`,!r.ok?"Couldn't check":mx.length?"Found":"Not found",mx.length?esc((prov?prov+" · ":"")+mx.slice(0,3).join(", ")):"Domain can't receive mail — the address may be fake.");
 }
 
-/* ---------- run ---------- */
+/* ---- breach check (presence + categories only; never passwords) ---- */
+const SEV_DATA=/password|credential|security question|auth token|pin|credit card|bank|financial|social security|government|passport|license|licence/i;
+async function liveBreach(e,box){
+  box.innerHTML=`<div class="breach-head"><div class="risk none"><span class="spin"></span></div><div class="bsum"><div class="big">Checking breaches…</div><div class="lede">Querying public breach index.</div></div></div>`;
+  const r=await getJSON(`https://api.xposedornot.com/v1/breach-analytics?email=${enc(e)}`,{},11000);
+  if(!r.ok||!r.data){box.innerHTML=`<div class="lede" style="color:var(--muted)">Couldn't reach the breach index. Try the <a href="https://haveibeenpwned.com/account/${enc(e)}" target="_blank" rel="noopener">Have I Been Pwned</a> link below.</div>`;return;}
+  const d=r.data,ex=d.ExposedBreaches?.breaches_details||[];
+  if(!ex.length){box.innerHTML=`<div class="breach-head"><div class="risk none"><b>✓</b><span>Clean</span></div><div class="bsum"><div class="big">No known breaches</div><div class="lede">This email wasn't found in the public breach index. That's not a guarantee — keep 2FA on.</div></div></div>`;return;}
+  const riskLabel=(d.BreachMetrics?.risk?.[0]?.risk_label||"Medium"),riskScore=d.BreachMetrics?.risk?.[0]?.risk_score??"";
+  const rc=/critical/i.test(riskLabel)?"critical":/high/i.test(riskLabel)?"high":/medium/i.test(riskLabel)?"medium":"low";
+  // exposed data categories (flattened), with counts; flag sensitive
+  const cats=[];(d.BreachMetrics?.xposed_data||[]).forEach(top=>(top.children||[]).forEach(grp=>(grp.children||[]).forEach(leaf=>{const name=leaf.name.replace(/^data_/,"");cats.push([name,leaf.value||0]);})));
+  cats.sort((a,b)=>b[1]-a[1]);
+  const pwCount=cats.filter(([n])=>/password|credential/i.test(n)).reduce((s,[,v])=>s+v,0);
+  const years=ex.map(b=>+(b.xposed_date||"").slice(0,4)).filter(Boolean);
+  const span=years.length?`${Math.min(...years)}–${Math.max(...years)}`:"";
+  const totalRecords=ex.reduce((s,b)=>s+(+b.xposed_records||0),0);
+  let html=`<div class="breach-head">
+    <div class="risk ${rc}"><b>${esc(riskLabel)}</b><span>Risk${riskScore!==""?" "+riskScore:""}</span></div>
+    <div class="bsum"><div class="big">Found in ${ex.length} breach${ex.length>1?"es":""}</div>
+    <div class="lede">${span?`Breaches dated ${span}. `:""}${totalRecords?`${totalRecords.toLocaleString()} total records exposed across them.`:""}</div></div></div>`;
+  if(pwCount>0)html+=`<div class="secnote"><svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg><div><b>Passwords were among the leaked data in ${pwCount} of these breaches.</b> This tool does not show leaked passwords. If this is your address, change the password anywhere you reused it and turn on two-factor authentication now.</div></div>`;
+  html+=`<div class="group-title">What kind of data was exposed</div><div class="exposed">${cats.slice(0,18).map(([n,v])=>`<span class="exp ${SEV_DATA.test(n)?"sev":""}">${esc(n)}${v?`<b>×${v}</b>`:""}</span>`).join("")}</div>`;
+  const showFirst=12;
+  html+=`<div class="group-title">Breaches (${ex.length})</div><div class="blist" id="blist">${ex.slice(0,showFirst).map(b=>bitem(b)).join("")}</div>`;
+  if(ex.length>showFirst)html+=`<button class="small morebtn" id="moreBreach">Show ${ex.length-showFirst} more</button>`;
+  box.innerHTML=html;
+  if(ex.length>showFirst)box.querySelector("#moreBreach").onclick=e2=>{box.querySelector("#blist").innerHTML=ex.map(b=>bitem(b)).join("");e2.target.remove();};
+}
+function bitem(b){const data=(b.xposed_data||"").split(";").filter(Boolean);const sens=data.some(x=>SEV_DATA.test(x));return `<div class="bitem">${b.logo?`<img src="${esc(b.logo)}" alt="" onerror="this.style.display='none'">`:""}<div style="min-width:0"><div class="bn">${esc(b.breach)}${b.xposed_date?` <span style="color:var(--faint);font-weight:400">· ${esc(String(b.xposed_date))}</span>`:""}</div>${b.xposed_records?`<div class="bx">${(+b.xposed_records).toLocaleString()} records${b.industry?` · ${esc(b.industry)}`:""}</div>`:""}${data.length?`<div class="bd" style="color:${sens?"var(--crit)":"var(--muted)"}">${esc(data.slice(0,6).join(", "))}</div>`:""}</div></div>`;}
+
+async function liveDomain(d,isIP,box){
+  if(isIP){box.innerHTML=hit("ipinfo.io",`https://ipinfo.io/${d}`,"Checking…");const r=await getJSON(`https://ipinfo.io/${enc(d)}/json`);const x=r.data||{};box.innerHTML=r.ok?`<div class="facts">${["hostname","city","region","country","org","postal","timezone","loc"].filter(k=>x[k]).map(k=>fact(k,esc(x[k]))).join("")}</div>`:hit("ipinfo.io",`https://ipinfo.io/${d}`,"Couldn't check");return;}
+  box.innerHTML=`<div class="facts" id="dnsf">${fact("DNS","Checking… <span class='spin'></span>")}</div>`;
+  const types=["A","AAAA","MX","NS","TXT"];const res=await Promise.all(types.map(t=>getJSON(`https://cloudflare-dns.com/dns-query?name=${enc(d)}&type=${t}`,{headers:{accept:"application/dns-json"}})));const rd=await getJSON(`https://rdap.org/domain/${enc(d)}`);
+  let out=types.map((t,i)=>{const a=(res[i].data?.Answer||[]).map(x=>x.data);return a.length?fact(t,esc(a.slice(0,4).join(" · ").slice(0,300))):"";}).join("");
+  if(rd.ok&&rd.data){const ev=Object.fromEntries((rd.data.events||[]).map(e=>[e.eventAction,e.eventDate?.slice(0,10)]));const reg=(rd.data.entities||[]).find(e=>e.roles?.includes("registrar"));const regName=reg?.vcardArray?.[1]?.find(v=>v[0]==="fn")?.[3];if(ev.registration)out+=fact("Registered",esc(ev.registration));if(ev.expiration)out+=fact("Expires",esc(ev.expiration));if(regName)out+=fact("Registrar",esc(regName));}
+  box.querySelector("#dnsf").innerHTML=out||fact("DNS","No records found");
+}
+async function liveAddress(a,box){
+  const q=[a.street,a.city,a.state,a.zip].filter(Boolean).join(", ");box.innerHTML=`<div class="group-title">Map</div><div style="color:var(--muted);font-size:13px">Locating… <span class="spin"></span></div>`;
+  const r=await getJSON(`https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=1&countrycodes=us&q=${enc(q)}`);const p=r.data?.[0];
+  if(!p){box.innerHTML=`<div class="group-title">Map</div><div style="color:var(--muted);font-size:13px">Couldn't place this address on the map.</div>`;return;}
+  const lat=+p.lat,lon=+p.lon,dd=.004,ad=p.address||{};
+  box.innerHTML=`<iframe class="map" loading="lazy" src="https://www.openstreetmap.org/export/embed.html?bbox=${lon-dd},${lat-dd},${lon+dd},${lat+dd}&layer=mapnik&marker=${lat},${lon}"></iframe><div class="facts">${fact("Matched",esc(p.display_name))}${ad.county?fact("County",esc(ad.county)):""}${fact("Coordinates",`${lat.toFixed(5)}, ${lon.toFixed(5)}`)}${fact("Street View",`<a target="_blank" rel="noopener" href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lon}">Open ↗</a>`)}</div>`;
+  if(ad.county){const link=box.closest(".card").querySelector('.links a[href*="property%20appraiser"]');if(link)link.href=g(`${ad.county} ${ad.state||""} property appraiser parcel search`);}
+}
+
+/* ============ run ============ */
 function run(q){
-  const R = $("#results"); R.innerHTML = "";
-  let any = false;
+  const R=$("#results");R.innerHTML="";let any=false;let profileNeeded=false;
+  if((q.user)||(q.email)||(q.first&&q.last)){profileNeeded=true;}
+  if(profileNeeded){Profile.reset(q.user?("@"+q.user):q.email?q.email:title(`${q.first} ${q.last}`));Profile.mount();}
 
-  if (q.first && q.last){
-    any = true;
-    const loc = [q.city, q.state].filter(Boolean).join(", ");
-    const c = card("c-name", `${title([q.first, q.middle, q.last].filter(Boolean).join(" "))}`, loc ? `· ${loc}` : "· name search", renderLinks(nameSources(q)));
-    if (q.age) c.querySelector(".body").insertAdjacentHTML("afterbegin", `<div class="facts">${fact("Approx. birth year", String(new Date().getFullYear()-+q.age-1)+"–"+String(new Date().getFullYear()-+q.age))}</div>`);
-  }
-  if (q.phone){
-    const ph = parsePhone(q.phone);
-    if (ph){
-      any = true;
-      const st = AC[ph.a];
-      const kind = TOLLFREE.includes(ph.a) ? "Toll-free" : ph.a==="900" ? "Premium-rate" : /^555(01\d\d)$/.test(ph.e+ph.l.slice(0,2)+"00") && ph.e==="555" ? "Fictional (555)" : "Standard";
-      const facts = `<div class="facts">${fact("Formats", `${ph.paren}<br>${ph.dash}<br>${ph.e164}`)}${fact("Area code", `${ph.a}${st?" · "+STATES[st]:""}`)}${fact("Type", kind + (ph.e==="555"?" · 555 exchange is mostly fictional/directory":""))}${fact("Note","Area code shows where the number was issued. Numbers can be ported or VoIP.")}</div>`;
-      const c = card("c-phone", ph.paren, "· reverse phone", facts + renderLinks(phoneSources(ph)));
-      if (st && !q.state) c.querySelector(".facts").insertAdjacentHTML("afterend", pivots([[`Use ${st} for name searches`, `__state:${st}`]]));
-    } else {
-      R.insertAdjacentHTML("beforeend", `<div class="card"><div class="body">"${esc(q.phone)}" isn't a 10-digit US number.</div></div>`);
-    }
-  }
-  if (q.email){
-    any = true;
-    const e = q.email.trim().toLowerCase(), [local, domain] = e.split("@");
-    const facts = `<div class="facts">${fact("Username part", esc(local))}${fact("Domain", esc(domain))}${fact("Provider", esc(FREE_MAIL[domain] || "Custom / work domain"))}</div>`;
-    const piv = pivots([[`Search username “${local.replace(/[.+].*$/,"")}”`, "@"+local.replace(/\+.*$/,"")], ...(FREE_MAIL[domain]?[]:[[`Look up domain ${domain}`, domain]])]);
-    const c = card("c-email", e, "· email", facts + piv + `<div class="group-title">Live checks</div><div class="live" id="liveEmail"></div>` + renderLinks(emailSources(e)));
-    liveEmail(e, c.querySelector("#liveEmail"));
-  }
-  if (q.user){
-    any = true;
-    const u = q.user.replace(/^@/,"").trim();
-    const c = card("c-user", "@"+u, "· username", `<div class="group-title">Live checks (public APIs)</div><div class="live" id="liveUser"></div>` + renderLinks(userSources(u)));
-    liveUsername(u, c.querySelector("#liveUser"));
-  }
-  if (q.street){
-    any = true;
-    const c = card("c-addr", title(q.street), "· " + [title(q.city), [q.state, q.zip].filter(Boolean).join(" ")].filter(Boolean).join(", "), `<div id="liveAddr"></div>` + renderLinks(addressSources(q)));
-    liveAddress(q, c.querySelector("#liveAddr"));
-  }
-  if (q.domain){
-    any = true;
-    const d = q.domain.trim().replace(/^https?:\/\//,"").replace(/\/.*$/,"").toLowerCase();
-    const isIP = /^(\d{1,3}\.){3}\d{1,3}$/.test(d) || d.includes(":");
-    const c = card("c-dom", d, isIP ? "· IP address" : "· domain", `<div id="liveDom"></div>` + renderLinks(domainSources(d, isIP)));
-    liveDomain(d, isIP, c.querySelector("#liveDom"));
-  }
-  if (!any && !R.children.length) R.innerHTML = `<div class="empty">Enter a full name (first and last), phone, email, username, address, or domain.</div>`;
+  if(q.first&&q.last){any=true;const loc=[q.city,q.state].filter(Boolean).join(", ");const c=card("c-name","name",title([q.first,q.middle,q.last].filter(Boolean).join(" ")),loc?`· ${esc(loc)}`:"· name search",renderLinks(nameSources(q)));if(q.age)c.querySelector(".body").insertAdjacentHTML("afterbegin",`<div class="facts">${fact("Approx. birth year",String(new Date().getFullYear()-+q.age-1)+"–"+String(new Date().getFullYear()-+q.age))}</div>`);}
+  if(q.phone){const ph=parsePhone(q.phone);if(ph){any=true;const st=AC[ph.a];const kind=TOLLFREE.includes(ph.a)?"Toll-free":ph.a==="900"?"Premium-rate":ph.e==="555"?"Likely fictional (555)":"Standard";const facts=`<div class="facts">${fact("Formats",`${ph.paren}<br>${ph.dash}<br>${ph.e164}`)}${fact("Area code",`${ph.a}${st?" · "+STATES[st]:""}`)}${fact("Type",kind)}${fact("Note","Area code = where issued. Numbers can be ported or VoIP.")}</div>`;const c=card("c-phone","phone",ph.paren,"· reverse phone",facts+renderLinks(phoneSources(ph)));if(st&&!q.state)c.querySelector(".facts").insertAdjacentHTML("afterend",pivots([[`Use ${st} for name searches`,`__state:${st}`]]));}else R.insertAdjacentHTML("beforeend",`<div class="card"><div class="body">"${esc(q.phone)}" isn't a 10-digit US number.</div></div>`);}
+  if(q.email){any=true;const e=q.email.trim().toLowerCase(),[local,domain]=e.split("@");const facts=`<div class="facts">${fact("Username part",esc(local))}${fact("Domain",esc(domain))}${fact("Provider",esc(FREE_MAIL[domain]||"Custom / work domain"))}</div>`;const piv=pivots([[`Search username “${local.replace(/[.+].*$/,"")}”`,"@"+local.replace(/\+.*$/,"")],...(FREE_MAIL[domain]?[]:[[`Look up domain ${domain}`,domain]])]);const c=card("c-email","email",e,"· email",facts+piv+`<div class="group-title">Breach exposure</div><div id="liveBreach"></div><div class="group-title">Profile &amp; mail server</div><div class="live" id="liveEmail"></div>`+renderLinks(emailSources(e)));liveEmail(e,c.querySelector("#liveEmail"));liveBreach(e,c.querySelector("#liveBreach"));}
+  if(q.user){any=true;const u=q.user.replace(/^@/,"").trim();const c=card("c-user","username","@"+u,"· username",`<div class="group-title">Live account checks (public APIs)</div><div class="live" id="liveUser"></div>`+renderLinks(userSources(u)));liveUsername(u,c.querySelector("#liveUser"));}
+  if(q.street){any=true;const c=card("c-addr","address",title(q.street),"· "+esc([title(q.city),[q.state,q.zip].filter(Boolean).join(" ")].filter(Boolean).join(", ")),`<div id="liveAddr"></div>`+renderLinks(addressSources(q)));liveAddress(q,c.querySelector("#liveAddr"));}
+  if(q.domain){any=true;const d=q.domain.trim().replace(/^https?:\/\//,"").replace(/\/.*$/,"").toLowerCase();const isIP=/^(\d{1,3}\.){3}\d{1,3}$/.test(d)||d.includes(":");const c=card("c-dom",isIP?"ip":"domain",d,isIP?"· IP address":"· domain",`<div class="group-title">Live lookup</div><div id="liveDom"></div>`+renderLinks(domainSources(d,isIP)));liveDomain(d,isIP,c.querySelector("#liveDom"));}
+  if(!any)R.innerHTML=`<div class="empty"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><p>Need a bit more to go on.</p><div class="s">Enter a full name (first + last), phone, email, username, address, or domain.</div></div>`;
 }
 
-/* ---------- form wiring ---------- */
-const F = ["first","middle","last","age","street","city","state","zip","phone","email","user","domain"];
-const stateSel = $("#f_state");
-stateSel.innerHTML = `<option value="">Any</option>` + Object.entries(STATES).map(([k,v])=>`<option value="${k}">${k} · ${v}</option>`).join("");
-function readForm(){ const o={}; F.forEach(k=>o[k]=$("#f_"+k).value.trim()); return o; }
-function fillForm(o){ F.forEach(k=>{ $("#f_"+k).value = o[k]||""; }); }
-
-$("#smartForm").onsubmit = e => {
-  e.preventDefault();
-  const d = detect($("#smart").value);
-  if (!d) return;
-  const labels = {email:"email",phone:"phone number",username:"username",name:"name",address:"address",domain:"domain",ip:"IP address"};
-  $("#detected").textContent = `Detected: ${labels[d.type]}. Wrong guess? Open Detailed search to fix it.`;
-  const o = {first:d.first,middle:d.middle,last:d.last,city:d.city,state:d.state,zip:d.zip,street:d.street,phone:d.phone,email:d.email,user:d.user,domain:d.domain};
-  if (d.type==="name" && !d.last){ o.first=""; o.user=d.first; }
-  fillForm(o);
-  run(readForm());
-};
-$("#advForm").onsubmit = e => { e.preventDefault(); run(readForm()); };
-$("#clearBtn").onclick = () => { fillForm({}); $("#smart").value=""; $("#results").innerHTML = `<div class="empty">Results will appear here.</div>`; };
-$("#results").addEventListener("click", e => {
-  const p = e.target.closest("[data-pivot]")?.dataset.pivot; if (!p) return;
-  if (p.startsWith("__state:")){ $("#f_state").value = p.slice(8); $("#adv").open = true; $("#f_first").focus(); return; }
-  $("#smart").value = p; $("#smartForm").requestSubmit(); window.scrollTo({top:0, behavior:"smooth"});
-});
-$("#themeBtn").onclick = () => {
-  const cur = document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-  const next = cur === "dark" ? "light" : "dark";
-  document.documentElement.dataset.theme = next;
-  try { localStorage.setItem("theme", next); } catch {}
-};
-try { const t = localStorage.getItem("theme"); if (t) document.documentElement.dataset.theme = t; } catch {}
-const qp = new URLSearchParams(location.search).get("q");
-if (qp){ $("#smart").value = qp; $("#smartForm").requestSubmit(); }
+/* ============ wiring ============ */
+const F=["first","middle","last","age","street","city","state","zip","phone","email","user","domain"];
+$("#f_state").innerHTML=`<option value="">Any</option>`+Object.entries(STATES).map(([k,v])=>`<option value="${k}">${k} · ${v}</option>`).join("");
+const readForm=()=>{const o={};F.forEach(k=>o[k]=$("#f_"+k).value.trim());return o;};
+const fillForm=o=>F.forEach(k=>$("#f_"+k).value=o[k]||"");
+const LABELS={email:"Email",phone:"Phone number",username:"Username",name:"Name",address:"Address",domain:"Domain",ip:"IP address"};
+$("#smartForm").onsubmit=ev=>{ev.preventDefault();const d=detect($("#smart").value);if(!d){$("#detected").innerHTML="";return;}
+  $("#detected").innerHTML=`<span class="detbadge">${esc(LABELS[d.type]||d.type)}</span> detected — wrong? open Detailed search to adjust.`;
+  const o={first:d.first,middle:d.middle,last:d.last,city:d.city,state:d.state,zip:d.zip,street:d.street,phone:d.phone,email:d.email,user:d.user,domain:d.domain};
+  fillForm(o);run(readForm());};
+$("#advForm").onsubmit=ev=>{ev.preventDefault();$("#detected").innerHTML="";run(readForm());};
+$("#clearBtn").onclick=()=>{fillForm({});$("#smart").value="";$("#detected").innerHTML="";R.innerHTML="";$("#results").innerHTML=`<div class="empty"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><p>Enter anything above to begin.</p><div class="s">Live checks run instantly. Everything else opens the source site with your query filled in.</div></div>`;};
+document.querySelectorAll(".chip-ex").forEach(c=>c.onclick=()=>{$("#smart").value=c.textContent;$("#smartForm").requestSubmit();});
+$("#results").addEventListener("click",ev=>{const p=ev.target.closest("[data-pivot]")?.dataset.pivot;if(!p)return;if(p.startsWith("__state:")){$("#f_state").value=p.slice(8);$("#adv").open=true;$("#f_first").focus();return;}$("#smart").value=p;$("#smartForm").requestSubmit();window.scrollTo({top:0,behavior:"smooth"});});
+$("#themeBtn").onclick=()=>{const cur=document.documentElement.dataset.theme||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");const next=cur==="dark"?"light":"dark";document.documentElement.dataset.theme=next;try{localStorage.setItem("theme",next);}catch{}};
+try{const t=localStorage.getItem("theme");if(t)document.documentElement.dataset.theme=t;}catch{}
+const qp=new URLSearchParams(location.search).get("q");if(qp){$("#smart").value=qp;$("#smartForm").requestSubmit();}
 </script>
 </body>
 </html>
