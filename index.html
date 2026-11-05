@@ -193,6 +193,21 @@ iframe.map{width:100%;height:260px;border:0;border-radius:11px;background:var(--
 .modal .mact{display:flex;gap:9px;margin-top:16px;justify-content:flex-end}
 .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:0}
 .dot.on{background:var(--ok)}.dot.off{background:var(--faint)}
+/* self-scan */
+#scanBtn{background:linear-gradient(180deg,#2bb673,#17824a);border:0;color:#fff;font-weight:650}
+#scanBtn:hover{filter:brightness(1.06);color:#fff}
+.modal .sform label{margin-top:12px}
+.modal .sform label:first-child{margin-top:0}
+.privnote{font-size:12px;color:var(--faint);margin-top:12px;display:flex;gap:7px;align-items:flex-start}
+.privnote svg{width:14px;height:14px;stroke:var(--ok);fill:none;stroke-width:2;flex:none;margin-top:1px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:10px;margin-bottom:4px}
+.tile{background:var(--panel2);border:1px solid var(--border);border-radius:11px;padding:13px 10px;text-align:center}
+.tile b{font-size:27px;font-weight:740;display:block;line-height:1}
+.tile.warn b{color:var(--crit)}
+.tile span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+.todo{display:flex;flex-direction:column;gap:10px}
+.todoi{display:flex;gap:11px;font-size:13.5px;align-items:flex-start;line-height:1.45}
+.todoi .cb{width:16px;height:16px;border:2px solid var(--border2);border-radius:5px;flex:none;margin-top:2px}
 .empty{color:var(--muted);text-align:center;padding:60px 20px}
 .empty svg{width:46px;height:46px;stroke:var(--border2);fill:none;stroke-width:1.5;margin-bottom:12px}
 .empty p{margin:0;font-size:15px}.empty .s{font-size:13px;color:var(--faint);margin-top:6px}
@@ -208,11 +223,31 @@ footer b{color:var(--text)}
       <div class="logo"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div>
       <div><h1>Trace Lookup</h1><p>Search usernames, emails, phones, names, addresses, domains &amp; IPs — results shown inline.</p></div>
     </div>
-    <div style="display:flex;gap:8px">
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="small" id="scanBtn" title="Scan your own exposure">🛡️ Scan myself</button>
       <button class="small ghost" id="dataBtn" title="Connect a data backend for address & phone"><span class="dot off" id="dataDot"></span>Data backend</button>
       <button class="small ghost" id="themeBtn" title="Toggle light / dark">◐ Theme</button>
     </div>
   </header>
+
+  <div class="ov" id="ovScan">
+    <div class="modal">
+      <h2>Scan yourself</h2>
+      <p>See what's publicly exposed about <b>you</b> — accounts, breaches, contact info — and get one-click removal links. Enter whatever you have; more detail finds more.</p>
+      <div class="sform">
+        <label for="s_name">Your name <span style="font-weight:400">(for people-search removal)</span></label>
+        <input id="s_name" placeholder="Jane Doe" autocomplete="off">
+        <label for="s_users">Usernames / handles <span style="font-weight:400">(comma-separated)</span></label>
+        <input id="s_users" placeholder="janedoe, jdoe99, j.doe" autocomplete="off" spellcheck="false">
+        <label for="s_emails">Email(s) <span style="font-weight:400">(comma-separated)</span></label>
+        <input id="s_emails" placeholder="jane@gmail.com, jdoe@work.com" autocomplete="off" spellcheck="false">
+        <label for="s_phone">Phone <span style="font-weight:400">(optional)</span></label>
+        <input id="s_phone" placeholder="(555) 123-4567" inputmode="tel" autocomplete="off">
+      </div>
+      <div class="privnote"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg><span>Everything runs in your browser. Your details are sent only to the public lookup APIs being checked — never stored or sent anywhere else.</span></div>
+      <div class="mact"><button class="ghost" id="scanClose">Cancel</button><button class="primary" id="scanGo">Scan my exposure</button></div>
+    </div>
+  </div>
 
   <div class="ov" id="ov">
     <div class="modal">
@@ -499,12 +534,12 @@ function linksBlock(groups){const d=document.createElement("div");d.innerHTML=gr
 async function liveMail(e,box){const domain=e.split("@")[1];const r=await getJSON(`https://cloudflare-dns.com/dns-query?name=${enc(domain)}&type=MX`,{headers:{accept:"application/dns-json"}});const mx=(r.data?.Answer||[]).filter(a=>a.type===15).map(a=>a.data.split(" ").pop().replace(/\.$/,""));const m=mx.join(" ");let prov="";if(/google/i.test(m))prov="Google / Gmail";else if(/outlook|microsoft/i.test(m))prov="Microsoft 365";else if(/protonmail/i.test(m))prov="Proton";else if(/yahoo/i.test(m))prov="Yahoo";else if(/icloud|apple/i.test(m))prov="iCloud";else if(/zoho/i.test(m))prov="Zoho";box.innerHTML=`<div class="facts">${fact("Provider",esc(FREE_MAIL[domain]||prov||"Custom domain"))}${fact("Mail server",mx.length?esc(mx.slice(0,2).join(", ")):"none — address may be fake")}${fact("Deliverable",mx.length?"Yes (domain accepts mail)":"No")}</div>`;}
 async function liveGeo(q,box){const r=await getJSON(`https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=1&q=${enc(q)}`);const p=r.data?.[0];if(!p){box.innerHTML=`<div style="color:var(--muted);font-size:13px">Couldn't map “${esc(q)}”.</div>`;return;}const lat=+p.lat,lon=+p.lon,dd=.03,ad=p.address||{};box.innerHTML=`<iframe class="map" loading="lazy" src="https://www.openstreetmap.org/export/embed.html?bbox=${lon-dd},${lat-dd},${lon+dd},${lat+dd}&layer=mapnik&marker=${lat},${lon}"></iframe><div class="facts" style="margin-top:11px">${fact("Matched",esc(p.display_name))}${ad.country?fact("Country",esc(ad.country)):""}${fact("Coordinates",`${lat.toFixed(4)}, ${lon.toFixed(4)}`)}</div>`;}
 const SEV_DATA=/password|credential|security question|auth token|pin|credit card|bank|financial|social security|government|passport|license|licence/i;
-async function liveBreach(e,box){
+async function liveBreach(e,box,onStats){
   box.innerHTML=`<div class="breach-head"><div class="risk none"><span class="spin"></span></div><div class="bsum"><div class="big">Checking breaches…</div><div class="lede">Querying public breach index.</div></div></div>`;
   const r=await getJSON(`https://api.xposedornot.com/v1/breach-analytics?email=${enc(e)}`,{},11000);
   if(!r.ok||!r.data){box.innerHTML=`<div class="lede" style="color:var(--muted)">Couldn't reach the breach index — try <a href="https://haveibeenpwned.com/account/${enc(e)}" target="_blank" rel="noopener">Have I Been Pwned</a>.</div>`;return;}
   const d=r.data,ex=d.ExposedBreaches?.breaches_details||[];
-  if(!ex.length){box.innerHTML=`<div class="breach-head"><div class="risk none"><b>✓</b><span>Clean</span></div><div class="bsum"><div class="big">No known breaches</div><div class="lede">Not found in the public breach index. Keep 2FA on.</div></div></div>`;return;}
+  if(!ex.length){box.innerHTML=`<div class="breach-head"><div class="risk none"><b>✓</b><span>Clean</span></div><div class="bsum"><div class="big">No known breaches</div><div class="lede">Not found in the public breach index. Keep 2FA on.</div></div></div>`;onStats&&onStats({breaches:0,pw:0,cats:[]});return;}
   const riskLabel=d.BreachMetrics?.risk?.[0]?.risk_label||"Medium",riskScore=d.BreachMetrics?.risk?.[0]?.risk_score??"";
   const rc=/critical/i.test(riskLabel)?"critical":/high/i.test(riskLabel)?"high":/medium/i.test(riskLabel)?"medium":"low";
   const cats=[];(d.BreachMetrics?.xposed_data||[]).forEach(t=>(t.children||[]).forEach(gr=>(gr.children||[]).forEach(lf=>cats.push([lf.name.replace(/^data_/,""),lf.value||0]))));cats.sort((a,b)=>b[1]-a[1]);
@@ -518,6 +553,7 @@ async function liveBreach(e,box){
   if(ex.length>first)h+=`<button class="small" style="margin-top:11px" id="mb-${slug(e)}">Show ${ex.length-first} more</button>`;
   box.innerHTML=h;
   if(ex.length>first)box.querySelector(`#mb-${slug(e)}`).onclick=ev=>{box.querySelector(`#bl-${slug(e)}`).innerHTML=ex.map(bitem).join("");ev.target.remove();};
+  onStats&&onStats({breaches:ex.length,pw,cats});
 }
 function bitem(b){const data=(b.xposed_data||"").split(";").filter(Boolean);const sens=data.some(x=>SEV_DATA.test(x));return `<div class="bitem">${b.logo?`<img src="${esc(b.logo)}" alt="" onerror="this.style.display='none'">`:""}<div style="min-width:0"><div class="bn">${esc(b.breach)}${b.xposed_date?` <span style="color:var(--faint);font-weight:400">· ${esc(String(b.xposed_date))}</span>`:""}</div>${b.xposed_records?`<div class="bx">${(+b.xposed_records).toLocaleString()} records${b.industry?` · ${esc(b.industry)}`:""}</div>`:""}${data.length?`<div class="bd" style="color:${sens?"var(--crit)":"var(--muted)"}">${esc(data.slice(0,6).join(", "))}</div>`:""}</div></div>`;}
 async function liveDomain(d,isIP,box){
@@ -564,6 +600,97 @@ async function peopleLookup(kind,params,box){
   const persons=normPersons(r.data);
   if(!persons.length){box.innerHTML=`<div class="notfound">No records returned for this ${kind==="phone"?"number":"name"}. The provider may have no match, or the response format differs — see api/README.md.</div>`;return;}
   box.innerHTML=`<div class="pd-banner"><span><b>${persons.length} record${persons.length>1?"s":""}</b> from your data backend · live</span></div>`+persons.map(personBlock).join("");
+}
+
+/* ===== scan myself (personal exposure report) ===== */
+const OPTOUT=[
+ ["FastPeopleSearch","https://www.fastpeoplesearch.com/removal"],["TruePeopleSearch","https://www.truepeoplesearch.com/removal"],
+ ["ThatsThem","https://thatsthem.com/optout"],["Spokeo","https://www.spokeo.com/optout"],
+ ["Whitepages","https://www.whitepages.com/suppression-requests"],["BeenVerified","https://www.beenverified.com/app/optout/search"],
+ ["Intelius","https://www.intelius.com/opt-out/"],["Radaris","https://radaris.com/control/privacy"],
+ ["MyLife","https://www.mylife.com/ccpa/index.pubview"],["PeopleFinders","https://www.peoplefinders.com/opt-out"],
+ ["USPhoneBook","https://www.usphonebook.com/opt-out"],["Nuwber","https://nuwber.com/removal/link"],
+ ["CyberBackgroundChecks","https://www.cyberbackgroundchecks.com/removal"],["SearchPeopleFree","https://www.searchpeoplefree.com/removal"],
+ ["ClustrMaps","https://clustrmaps.com/bl/opt-out"],["FamilyTreeNow","https://www.familytreenow.com/optout"],
+ ["PeekYou","https://www.peekyou.com/about/contact/optout/"],["Instant Checkmate","https://www.instantcheckmate.com/opt-out/"],
+ ["TruthFinder","https://www.truthfinder.com/opt-out/"],["ZabaSearch","https://www.zabasearch.com/block_records/"],
+ ["Advanced Background Checks","https://www.advancedbackgroundchecks.com/removal"],["USSearch","https://www.ussearch.com/opt-out/submit/"],
+];
+const CHECKLIST=[
+ "Change the password on any breached account above — and never reuse a password across sites.",
+ "Turn on two-factor authentication everywhere; prefer an authenticator app or a security key over SMS.",
+ "Use a password manager so every account has a unique, strong password.",
+ "Opt out of the people-search sites above, then re-check every 3–6 months — they quietly re-add you.",
+ "Make social accounts private and remove your email and phone number from public bios.",
+ "Use Google's “Results about you” to request removal of pages exposing your contact info.",
+ "Freeze your credit with the three US bureaus to block identity theft — it's free.",
+ "Use an email alias or forwarding address when signing up for new services.",
+];
+async function collectProfiles(username,grid,acc){
+  await Promise.all(SRC.map(async s=>{
+    let r=null;try{r=await s.run(username);}catch{}
+    if(r&&r!=="miss"&&typeof r==="object"){
+      r.handle=r.handle||username;
+      if(acc.profiles.some(p=>p.platform===r.platform&&String(p.handle||"").toLowerCase()===String(r.handle||"").toLowerCase()))return;
+      acc.profiles.push(r);
+      if(r.email)acc.emails.add(r.email.toLowerCase());
+      if(r.location)acc.locs.add(r.location);
+      if(r.site&&hostOf(r.site))acc.sites.add(hostOf(r.site));
+      (r.discovered||[]).forEach(l=>{const h=hostOf(l.url);if(h&&!/mastodon|keybase|gravatar/.test(h))acc.sites.add(h);});
+      if(r.name&&/[a-z]\s+[a-z]/i.test(r.name))acc.names.add(r.name);
+      grid.appendChild(profileCard(r));
+    }
+  }));
+}
+async function scanMyself(d){
+  clearResults();
+  const emails=[...new Set((d.emails||[]).map(e=>e.trim().toLowerCase()).filter(e=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)))];
+  const users=[...new Set((d.users||[]).map(u=>u.replace(/^@/,"").trim()).filter(Boolean))];
+  const searchUsers=[...new Set([...users,...emails.map(e=>e.split("@")[0].replace(/\+.*$/,""))].filter(u=>u.length>=2))];
+  const nm=(d.name||"").trim();
+
+  secH("Your exposure at a glance");
+  const ov=ecard("shield","Exposure summary",nm?esc(nm):"",`<div class="tiles" id="scTiles"></div>`);R().appendChild(ov);
+  const state={accounts:0,breaches:0,pw:0,dataTypes:new Set(),emails:new Set(emails)};
+  function tiles(){$("#scTiles").innerHTML=[
+    ["Public accounts",state.accounts,false],["Breaches",state.breaches,state.breaches>0],
+    ["Passwords leaked",state.pw,state.pw>0],["Data types exposed",state.dataTypes.size,state.dataTypes.size>0],
+    ["People-search sites",OPTOUT.length,false],
+  ].map(([l,n,w])=>`<div class="tile${w?" warn":""}"><b>${n}</b><span>${l}</span></div>`).join("");}
+  tiles();
+
+  // breaches per email
+  if(emails.length){secH("Breach exposure");await Promise.all(emails.map(e=>{
+    const c=ecard("shield",e,"",`<div id="sb-${slug(e)}"></div>`);R().appendChild(c);
+    return liveBreach(e,c.querySelector(`#sb-${slug(e)}`),s=>{state.breaches+=s.breaches;state.pw+=s.pw;(s.cats||[]).forEach(([n])=>state.dataTypes.add(n));tiles();});
+  }));}
+
+  // accounts
+  secH("Accounts found under your details");
+  const grid=document.createElement("div");grid.className="grid";R().appendChild(grid);
+  const acc={profiles:[],emails:state.emails,locs:new Set(),sites:new Set(),names:new Set()};
+  if(searchUsers.length)await Promise.all(searchUsers.map(u=>collectProfiles(u,grid,acc)));
+  state.accounts=acc.profiles.length;tiles();
+  grid.insertAdjacentHTML("afterend",`<div class="notfound">${acc.profiles.length?`Checked ${searchUsers.length} handle(s) across ${SRC.length} sources. Social networks that block direct reads (Instagram, TikTok, Reddit…) aren't shown — search them manually.`:`No public profiles found for those handles on the directly-readable sources.`}</div>`);
+
+  // contact info exposed
+  const exEmails=[...acc.emails],exSites=[...acc.sites];
+  if(exEmails.length||exSites.length){secH("Public contact info you've exposed");
+    R().appendChild(ecard("mail","Visible on your public profiles","",
+      `${exEmails.length?`<div class="pl-h">Emails</div><div class="tagrow">${exEmails.map(e=>`<span class="pill">${esc(e)}</span>`).join("")}</div>`:""}
+       ${exSites.length?`<div class="pl-h" style="margin-top:11px">Linked sites</div><div class="tagrow">${exSites.map(s=>`<span class="pill lk">${esc(s)}</span>`).join("")}</div>`:""}
+       <div style="font-size:12.5px;color:var(--muted);margin-top:11px">Anyone can see these. If you don't want them public, edit the profiles that list them.</div>`));}
+
+  // people-search removal
+  secH("People-search listings — remove yourself");
+  R().appendChild(ecard("user","Opt out of data brokers",nm?esc(nm):"",
+    `<div style="font-size:13px;color:var(--muted);margin-bottom:12px">These brokers may list your name, address, phone and relatives. Each link goes straight to its <b>removal / opt-out</b> page${nm?`, so you can take down listings for ${esc(nm)}`:""}. Removals take a few minutes each and should be repeated every few months.</div>
+     <div class="links">${OPTOUT.map(([n,u])=>`<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(n)}<span class="tag">opt out</span></a>`).join("")}<a href="https://myactivity.google.com/results-about-you" target="_blank" rel="noopener noreferrer">Google — Results about you<span class="tag">remove</span></a></div>`));
+
+  // hardening
+  secH("Lock it down — recommended actions");
+  R().appendChild(ecard("shield","Hardening checklist","",`<div class="todo">${CHECKLIST.map(c=>`<div class="todoi"><span class="cb"></span><span>${c}</span></div>`).join("")}</div>`));
+  window.scrollTo({top:0,behavior:"smooth"});
 }
 
 /* ===== orchestration ===== */
@@ -625,7 +752,17 @@ $("#ov").onclick=e=>{if(e.target===$("#ov"))$("#ov").classList.remove("on");};
 $("#wkClear").onclick=()=>{try{localStorage.removeItem("workerUrl");}catch{}$("#wkUrl").value="";$("#wkStat").innerHTML="Disconnected.";setDot();};
 $("#wkSave").onclick=async()=>{let u=$("#wkUrl").value.trim().replace(/\/+$/,"");if(u&&!/^https?:\/\//.test(u))u="https://"+u;if(!u){$("#wkStat").innerHTML="Enter your Worker URL.";return;}$("#wkStat").innerHTML=`Testing… <span class="spin"></span>`;const r=await getJSON(u+"/ping",{},8000);if(r.ok&&r.data?.ok){try{localStorage.setItem("workerUrl",u);}catch{}setDot();$("#wkStat").innerHTML=`<span class="dot on"></span>Connected${r.data.configured===false?" — but the Worker's API secrets aren't set yet":""}.`;}else{$("#wkStat").innerHTML=`<span class="dot off"></span>Couldn't reach ${esc(u)}/ping. Check the URL and that the Worker is deployed.`;}};
 setDot();
+/* scan-myself */
+$("#scanBtn").onclick=()=>{$("#ovScan").classList.add("on");$("#s_name").focus();};
+$("#scanClose").onclick=()=>$("#ovScan").classList.remove("on");
+$("#ovScan").onclick=e=>{if(e.target===$("#ovScan"))$("#ovScan").classList.remove("on");};
+$("#scanGo").onclick=()=>{
+  const d={name:$("#s_name").value,users:$("#s_users").value.split(","),emails:$("#s_emails").value.split(","),phone:$("#s_phone").value.trim()};
+  if(!d.name.trim()&&!d.users.some(x=>x.trim())&&!d.emails.some(x=>x.trim())){$("#s_name").focus();return;}
+  $("#ovScan").classList.remove("on");$("#detected").innerHTML=`<span class="detbadge">Self-scan</span> your exposure report`;scanMyself(d);
+};
 const qp=new URLSearchParams(location.search).get("q");if(qp){$("#smart").value=qp;$("#smartForm").requestSubmit();}
+if(new URLSearchParams(location.search).get("scan")==="1")$("#scanBtn").click();
 </script>
 </body>
 </html>
