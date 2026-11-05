@@ -168,6 +168,31 @@ iframe.map{width:100%;height:260px;border:0;border-radius:11px;background:var(--
 .tag{font-size:10px;font-weight:650;border-radius:999px;padding:2px 8px;background:var(--accent-soft);color:var(--accent);white-space:nowrap;text-transform:uppercase}
 .tag.paid{color:var(--warn);background:var(--warn-soft)}.tag.partial{color:var(--muted);background:var(--panel3)}
 .notfound{font-size:12.5px;color:var(--faint);margin-top:10px}
+/* people-data (backend) */
+.pd-banner{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);border-radius:11px;padding:11px 14px;font-size:13px;margin-bottom:12px}
+.pd-banner b{color:var(--text)}
+.person{border:1px solid var(--border);border-radius:11px;padding:13px 14px;margin-bottom:10px;background:var(--panel2)}
+.person .pn{font-size:16px;font-weight:680}.person .pa{font-size:12.5px;color:var(--muted);margin-left:7px;font-weight:500}
+.plist{display:flex;flex-direction:column;gap:6px;margin-top:9px}
+.plist .pl-h{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--faint);font-weight:650;margin-top:6px}
+.plist .row{display:flex;gap:9px;font-size:13.5px;align-items:baseline}
+.plist .row .d{color:var(--faint);font-size:11.5px;white-space:nowrap}
+.plist .row .main{overflow-wrap:anywhere}
+.cur{color:var(--ok);font-weight:650;font-size:10.5px;border:1px solid color-mix(in srgb,var(--ok) 40%,transparent);background:var(--ok-soft);border-radius:999px;padding:0 7px;margin-left:6px}
+.relrow{display:flex;flex-wrap:wrap;gap:6px;margin-top:5px}
+/* modal */
+.ov{position:fixed;inset:0;background:rgba(10,14,22,.55);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;z-index:50;padding:18px}
+.ov.on{display:flex}
+.modal{background:var(--panel);border:1px solid var(--border);border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.4);max-width:540px;width:100%;padding:22px}
+.modal h2{margin:0 0 4px;font-size:18px}
+.modal p{margin:0 0 15px;color:var(--muted);font-size:13px;line-height:1.5}
+.modal label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px}
+.modal input{width:100%;font:inherit;background:var(--panel2);border:1px solid var(--border2);border-radius:9px;padding:10px 12px;color:var(--text)}
+.modal input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.modal .mstat{font-size:12.5px;margin-top:9px;min-height:16px}
+.modal .mact{display:flex;gap:9px;margin-top:16px;justify-content:flex-end}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:0}
+.dot.on{background:var(--ok)}.dot.off{background:var(--faint)}
 .empty{color:var(--muted);text-align:center;padding:60px 20px}
 .empty svg{width:46px;height:46px;stroke:var(--border2);fill:none;stroke-width:1.5;margin-bottom:12px}
 .empty p{margin:0;font-size:15px}.empty .s{font-size:13px;color:var(--faint);margin-top:6px}
@@ -183,8 +208,26 @@ footer b{color:var(--text)}
       <div class="logo"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div>
       <div><h1>Trace Lookup</h1><p>Search usernames, emails, phones, names, addresses, domains &amp; IPs — results shown inline.</p></div>
     </div>
-    <button class="small ghost" id="themeBtn" title="Toggle light / dark">◐ Theme</button>
+    <div style="display:flex;gap:8px">
+      <button class="small ghost" id="dataBtn" title="Connect a data backend for address & phone"><span class="dot off" id="dataDot"></span>Data backend</button>
+      <button class="small ghost" id="themeBtn" title="Toggle light / dark">◐ Theme</button>
+    </div>
   </header>
+
+  <div class="ov" id="ov">
+    <div class="modal">
+      <h2>Data backend</h2>
+      <p>By itself this page can't pull a person's home <b>address or phone number</b> — that data only comes from paid people-search providers. Connect your own <b>Trace Lookup Worker</b> (see <code>api/</code> in the repo) and those results show up inline. Your API keys live in the Worker, never in this page.</p>
+      <label for="wkUrl">Worker URL</label>
+      <input id="wkUrl" placeholder="https://trace-lookup-api.yourname.workers.dev" autocomplete="off" spellcheck="false">
+      <div class="mstat" id="wkStat"></div>
+      <div class="mact">
+        <button class="ghost" id="wkClear">Disconnect</button>
+        <button class="ghost" id="wkClose">Close</button>
+        <button class="primary" id="wkSave">Save &amp; test</button>
+      </div>
+    </div>
+  </div>
 
   <div class="hero">
     <form class="smart" id="smartForm">
@@ -438,10 +481,13 @@ async function sweep(username,ctx){
   if(locs.length){const loc=locs.sort((a,b)=>b.length-a.length)[0];const c=ecard("pin",`Location — ${loc}`,"from a profile",`<div id="mapz">Locating… <span class="spin"></span></div>`);enrich.appendChild(c);tasks.push(liveGeo(loc,c.querySelector("#mapz")));}
   // 3) sites -> domain lookup
   for(const h of sites){const c=ecard("globe",`Website — ${h}`,"linked in a profile",`<div id="domz-${slug(h)}">Looking up… <span class="spin"></span></div>`);enrich.appendChild(c);tasks.push(liveDomain(h,false,c.querySelector(`#domz-${slug(h)}`)));}
-  // 4) names -> people-search (external; this is the address/phone route)
-  if(names.length){const nm=names[0];const parts=nm.split(/\s+/);const np={first:parts[0],last:parts.slice(1).join(" "),city:"",state:[...acc.locs].map(l=>{const m=l.match(/\b([A-Z]{2})\b/);return m&&STATES[m[1]]?m[1]:"";}).find(Boolean)||"",zip:""};
-    const c=ecard("user",`Real name — ${nm}`,"address & phone need these sources",`<div style="font-size:13px;color:var(--muted);margin-bottom:10px">A name turned up in the profiles above. Home address and phone number for a person come only from people-search services, which don't allow direct reads — open these to see what they have:</div>`);
-    c.querySelector(".eb").appendChild(linksBlock(nameSources(np)));enrich.appendChild(c);}
+  // 4) names -> people-search. With a backend: live address/phone (the real chain). Without: links.
+  if(names.length){const nm=names[0];const parts=nm.split(/\s+/);const stateG=[...acc.locs].map(l=>{const m=l.match(/\b([A-Z]{2})\b/);return m&&STATES[m[1]]?m[1]:"";}).find(Boolean)||"";
+    const np={first:parts[0],last:parts.slice(1).join(" "),city:"",state:stateG,zip:""};
+    const c=ecard("user",`Real name — ${nm}`,getWorker()?"live address & phone":"address & phone need a backend","");
+    if(getWorker()){const box=document.createElement("div");c.querySelector(".eb").appendChild(box);tasks.push(peopleLookup("person",{first:np.first,last:np.last,state:stateG},box));}
+    else{c.querySelector(".eb").innerHTML=`<div style="font-size:13px;color:var(--muted);margin-bottom:10px">A name turned up in the profiles above. Home address and phone come only from people-search services — open these, or connect a data backend to pull them in automatically:</div>`;c.querySelector(".eb").appendChild(linksBlock(nameSources(np)));}
+    enrich.appendChild(c);}
 
   await Promise.allSettled(tasks);
   if(ctx&&ctx.onDone)ctx.onDone(profiles,acc);
@@ -482,6 +528,44 @@ async function liveDomain(d,isIP,box){
   box.innerHTML=out?`<div class="facts">${out}</div>`:`<div style="color:var(--muted);font-size:13px">No DNS records for ${esc(d)}.</div>`;
 }
 
+/* ===== people-data backend (optional Worker) ===== */
+const getWorker=()=>{try{return(localStorage.getItem("workerUrl")||"").replace(/\/+$/,"");}catch{return"";}};
+function normPersons(raw){
+  if(!raw||typeof raw!=="object")return[];
+  let arr=raw.persons||raw.Persons||raw.people||raw.records;
+  if(!Array.isArray(arr))arr=(raw.Name||raw.FullName||raw.Addresses||raw.PhoneNumbers)?[raw]:[];
+  const txt=o=>typeof o==="string"?o:"";
+  return arr.map(p=>({
+    name:p.FullName||[p.Name?.FirstName,p.Name?.MiddleName,p.Name?.LastName].filter(Boolean).join(" ")||txt(p.name),
+    age:p.Age??p.age??p.DatesOfBirth?.[0]?.Age,
+    dob:p.Dob||p.dob,
+    addresses:(p.Addresses||p.addresses||[]).map(a=>({
+      full:a.FullAddress||[[a.HouseNumber,a.StreetName,a.StreetType].filter(Boolean).join(" "),a.City,[a.State,a.Zip].filter(Boolean).join(" ")].filter(Boolean).join(", ")||txt(a),
+      first:a.FirstReportedDate,last:a.LastReportedDate})).filter(a=>a.full),
+    phones:(p.PhoneNumbers||p.phoneNumbers||[]).map(ph=>typeof ph==="string"?{num:ph}:({
+      num:ph.PhoneNumber,type:ph.PhoneType,company:ph.Company,connected:ph.IsConnected,last:ph.LastReportedDate})).filter(x=>x.num),
+    emails:(p.EmailAddresses||p.emailAddresses||[]).map(e=>e.EmailAddress||e.emailAddress||txt(e)).filter(Boolean),
+    relatives:(p.RelativesSummary||p.relativesSummary||[]).map(r=>r.FullName||[r.Name?.FirstName,r.Name?.LastName].filter(Boolean).join(" ")).filter(Boolean),
+  })).filter(p=>p.name||p.addresses.length||p.phones.length);
+}
+function personBlock(p){
+  const addr=p.addresses.length?`<div class="pl-h">Addresses</div>`+p.addresses.slice(0,6).map((a,i)=>`<div class="row"><span class="main">${esc(a.full)}${i===0?`<span class="cur">most recent</span>`:""}</span>${a.last?`<span class="d">to ${esc(fmtDate(a.last)||a.last)}</span>`:""}</div>`).join(""):"";
+  const ph=p.phones.length?`<div class="pl-h">Phone numbers</div>`+p.phones.slice(0,6).map(x=>`<div class="row"><span class="main">${esc(x.num)}${x.type?` · ${esc(x.type)}`:""}${x.connected?`<span class="cur">connected</span>`:""}</span>${x.last?`<span class="d">to ${esc(fmtDate(x.last)||x.last)}</span>`:""}</div>`).join(""):"";
+  const em=p.emails.length?`<div class="pl-h">Emails</div>`+p.emails.slice(0,6).map(e=>`<div class="row"><span class="main">${esc(e)}</span></div>`).join(""):"";
+  const rel=p.relatives.length?`<div class="pl-h">Possible relatives</div><div class="relrow">${p.relatives.slice(0,8).map(r=>`<span class="pill" style="cursor:pointer" data-pivot="${esc(r)}">${esc(r)}</span>`).join("")}</div>`:"";
+  return `<div class="person"><div class="pn">${esc(p.name||"Unknown")}${p.age?`<span class="pa">age ${esc(String(p.age))}</span>`:""}${p.dob?`<span class="pa">b. ${esc(String(p.dob))}</span>`:""}</div><div class="plist">${addr}${ph}${em}${rel}</div></div>`;
+}
+async function peopleLookup(kind,params,box){
+  const w=getWorker();
+  if(!w){box.innerHTML=`<div class="pd-banner"><span><b>Address &amp; phone need a data backend.</b> Connect your Trace Lookup Worker to see them here.</span><button class="small primary" onclick="openData()">Connect</button></div>`;return;}
+  box.innerHTML=`<div style="color:var(--muted);font-size:13px">Querying your data backend… <span class="spin"></span></div>`;
+  const r=await getJSON(`${w}/${kind}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(params)},15000);
+  if(!r.ok){box.innerHTML=`<div class="pd-banner" style="background:var(--bad-soft);border-color:color-mix(in srgb,var(--bad) 30%,transparent)"><span>Backend error${r.data?.error?`: ${esc(r.data.error)}`:` (HTTP ${r.status||"no response"})`}. Check the Worker and your API plan.</span><button class="small ghost" onclick="openData()">Settings</button></div>`;return;}
+  const persons=normPersons(r.data);
+  if(!persons.length){box.innerHTML=`<div class="notfound">No records returned for this ${kind==="phone"?"number":"name"}. The provider may have no match, or the response format differs — see api/README.md.</div>`;return;}
+  box.innerHTML=`<div class="pd-banner"><span><b>${persons.length} record${persons.length>1?"s":""}</b> from your data backend · live</span></div>`+persons.map(personBlock).join("");
+}
+
 /* ===== orchestration ===== */
 async function run(q){
   clearResults();let any=false;
@@ -499,14 +583,17 @@ async function run(q){
   }
   if(q.phone){const ph=parsePhone(q.phone);if(ph){any=true;const st=AC[ph.a];const kind=TOLLFREE.includes(ph.a)?"Toll-free":ph.a==="900"?"Premium-rate":ph.e==="555"?"Likely fictional (555)":"Standard / mobile";
     secH(`Phone · ${ph.paren}`);
-    R().appendChild(ecard("phone",ph.paren,"",`<div class="facts">${fact("Formats",`${ph.paren}<br>${ph.dash}<br>${ph.e164}`)}${fact("Area code",`${ph.a}${st?" · "+STATES[st]:""}`)}${fact("Line type",kind)}${fact("Owner / address","Needs reverse lookup ↓")}</div><div style="font-size:12.5px;color:var(--muted);margin-top:10px">Area code shows where the number was first issued — it can be ported or VoIP. The owner's name and address come from the reverse-lookup services below (no free API returns them).</div>`));
+    R().appendChild(ecard("phone",ph.paren,"",`<div class="facts">${fact("Formats",`${ph.paren}<br>${ph.dash}<br>${ph.e164}`)}${fact("Area code",`${ph.a}${st?" · "+STATES[st]:""}`)}${fact("Line type",kind)}</div><div style="font-size:12.5px;color:var(--muted);margin-top:10px">Area code shows where the number was first issued — it can be ported or VoIP.</div>`));
+    const pc=ecard("user","Owner lookup","reverse phone",`<div id="pdPhone"></div>`);R().appendChild(pc);
+    peopleLookup("phone",{phone:ph.paren},pc.querySelector("#pdPhone"));
     R().appendChild(renderDeeper(phoneLinks(ph)));
   }else{R().appendChild(ecard("phone","Phone",`"${esc(q.phone)}" isn't a 10-digit US number.`,""));any=true;}}
   if(q.first&&q.last){any=true;const loc=[q.city,q.state].filter(Boolean).join(", ");secH(`Name · ${title(q.first+" "+q.last)}${loc?" · "+esc(loc):""}`);
-    let info=`<div style="font-size:13px;color:var(--muted);margin-bottom:10px">Searching by name for a stranger's address and phone only works through people-search services (no free API provides it). Open these — they take the name you entered:</div>`;
-    const c=ecard("user",title(q.first+" "+q.last),loc?esc(loc):"",info);
+    const c=ecard("user",title([q.first,q.middle,q.last].filter(Boolean).join(" ")),loc?esc(loc):"",`<div id="pdName"></div>`);
     if(q.age)c.querySelector(".eb").insertAdjacentHTML("afterbegin",`<div class="facts" style="margin-bottom:11px">${fact("Approx. birth year",(new Date().getFullYear()-+q.age-1)+"–"+(new Date().getFullYear()-+q.age))}</div>`);
-    c.querySelector(".eb").appendChild(linksBlock(nameSources(q)));R().appendChild(c);}
+    R().appendChild(c);
+    peopleLookup("person",{first:q.first,middle:q.middle,last:q.last,city:q.city,state:q.state},c.querySelector("#pdName"));
+    R().appendChild(renderDeeper(nameSources(q),"Deeper searches — open the people-search site"));}
   if(q.street){any=true;secH(`Address · ${title(q.street)}`);const c=ecard("pin",title(q.street),esc([title(q.city),[q.state,q.zip].filter(Boolean).join(" ")].filter(Boolean).join(", ")),`<div id="aMap">Locating… <span class="spin"></span></div>`);R().appendChild(c);liveGeo([q.street,q.city,q.state,q.zip].filter(Boolean).join(", "),c.querySelector("#aMap"));R().appendChild(renderDeeper(addressLinks(q)));}
   if(q.domain){any=true;const d=q.domain.trim().replace(/^https?:\/\//,"").replace(/\/.*$/,"").toLowerCase();const isIP=/^(\d{1,3}\.){3}\d{1,3}$/.test(d)||d.includes(":");secH(`${isIP?"IP":"Domain"} · ${d}`);const c=ecard("globe",d,isIP?"IP address":"domain",`<div id="dMain">Looking up… <span class="spin"></span></div>`);R().appendChild(c);liveDomain(d,isIP,c.querySelector("#dMain"));R().appendChild(renderDeeper(domainLinks(d,isIP)));}
   if(!any)R().innerHTML=`<div class="empty"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><p>Need a bit more to go on.</p><div class="s">Enter a username, email, phone, full name, address, or domain.</div></div>`;
@@ -528,6 +615,16 @@ $("#clearBtn").onclick=()=>{fillForm({});$("#smart").value="";$("#detected").inn
 document.querySelectorAll(".chip-ex").forEach(c=>c.onclick=()=>{$("#smart").value=c.textContent;$("#smartForm").requestSubmit();});
 $("#themeBtn").onclick=()=>{const cur=document.documentElement.dataset.theme||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");const next=cur==="dark"?"light":"dark";document.documentElement.dataset.theme=next;try{localStorage.setItem("theme",next);}catch{}};
 try{const t=localStorage.getItem("theme");if(t)document.documentElement.dataset.theme=t;}catch{}
+/* data backend settings */
+function setDot(){$("#dataDot").className="dot "+(getWorker()?"on":"off");}
+function openData(){$("#wkUrl").value=getWorker();$("#wkStat").innerHTML=getWorker()?`<span class="dot on"></span>Connected.`:"";$("#ov").classList.add("on");$("#wkUrl").focus();}
+window.openData=openData;
+$("#dataBtn").onclick=openData;
+$("#wkClose").onclick=()=>$("#ov").classList.remove("on");
+$("#ov").onclick=e=>{if(e.target===$("#ov"))$("#ov").classList.remove("on");};
+$("#wkClear").onclick=()=>{try{localStorage.removeItem("workerUrl");}catch{}$("#wkUrl").value="";$("#wkStat").innerHTML="Disconnected.";setDot();};
+$("#wkSave").onclick=async()=>{let u=$("#wkUrl").value.trim().replace(/\/+$/,"");if(u&&!/^https?:\/\//.test(u))u="https://"+u;if(!u){$("#wkStat").innerHTML="Enter your Worker URL.";return;}$("#wkStat").innerHTML=`Testing… <span class="spin"></span>`;const r=await getJSON(u+"/ping",{},8000);if(r.ok&&r.data?.ok){try{localStorage.setItem("workerUrl",u);}catch{}setDot();$("#wkStat").innerHTML=`<span class="dot on"></span>Connected${r.data.configured===false?" — but the Worker's API secrets aren't set yet":""}.`;}else{$("#wkStat").innerHTML=`<span class="dot off"></span>Couldn't reach ${esc(u)}/ping. Check the URL and that the Worker is deployed.`;}};
+setDot();
 const qp=new URLSearchParams(location.search).get("q");if(qp){$("#smart").value=qp;$("#smartForm").requestSubmit();}
 </script>
 </body>

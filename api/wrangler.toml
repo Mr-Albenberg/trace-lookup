@@ -1,0 +1,16 @@
+name = "trace-lookup-api"
+main = "worker.js"
+compatibility_date = "2024-11-01"
+
+# --- Secrets (DO NOT put these here; set them with wrangler so they stay secret) ---
+#   wrangler secret put GALAXY_AP_NAME
+#   wrangler secret put GALAXY_AP_PASSWORD
+
+[vars]
+# Base URL of your data provider's Galaxy API.
+# New EnformionGO accounts: https://devapi.enformion.com (default)
+# Legacy Endato accounts:   https://devapi.endato.com
+# GALAXY_BASE = "https://devapi.enformion.com"
+
+# Lock CORS to your published page (recommended once it works). "*" allows any origin.
+# ALLOW_ORIGIN = "https://mr-albenberg.github.io"
